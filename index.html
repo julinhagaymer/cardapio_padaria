@@ -3,179 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardápio - Padaria</title>
+    <title>Cardápio - Com Carinho</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: #f7f7f7;
-            color: #333;
-            padding-bottom: 30px;
-        }
-
-        header {
-            background-color: #ffffff;
-            padding: 16px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid #e6e6e6;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
-
-        .categoria-titulo {
-            font-size: 20px;
-            font-weight: 700;
-            margin: 24px 0 12px 0;
-            color: #222;
-        }
-
-        .item-card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-            border: 1px solid #efefef;
-        }
-
-        .item-info {
-            flex: 1;
-            padding-right: 12px;
-        }
-
-        .item-titulo {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 4px;
-        }
-
-        .item-descricao {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .item-preco {
-            font-size: 15px;
-            font-weight: 700;
-            color: #222;
-        }
-
-        .item-imagem {
-            width: 90px;
-            height: 90px;
-            border-radius: 8px;
-            object-fit: cover;
-            background-color: #eee;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f7f7f7; color: #333; padding-bottom: 40px; }
+        header { background-color: #ffffff; padding: 16px; text-align: center; font-size: 20px; font-weight: bold; border-bottom: 1px solid #e6e6e6; position: sticky; top: 0; z-index: 10; color: #8c2a2a; }
+        .container { max-width: 600px; margin: 0 auto; padding: 0 16px; }
+        .categoria-titulo { font-size: 20px; font-weight: 700; margin: 24px 0 12px 0; color: #222; border-bottom: 2px solid #8c2a2a; padding-bottom: 4px; }
+        .item-card { background-color: #ffffff; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #efefef; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .item-info { flex: 1; padding-right: 12px; }
+        .item-titulo { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+        .item-descricao { font-size: 13px; color: #666; margin-bottom: 8px; line-height: 1.3; }
+        .item-preco { font-size: 15px; font-weight: 700; color: #222; }
+        .item-imagem { width: 85px; height: 85px; border-radius: 8px; object-fit: cover; background-color: #eee; }
+        
+        /* Modal do Pedido */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; }
+        .modal-titulo { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+        .modal-desc { font-size: 14px; color: #666; margin-bottom: 16px; }
+        .qtd-control { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; }
+        .btn-qtd { background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn-pedir { background: #25d366; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn-fechar { background: transparent; border: none; color: #888; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <header>
-        🥖 Padaria & Confeitaria
-    </header>
+    <header>❤️ Com Carinho</header>
 
     <div class="container">
 
-        <!-- PÃES -->
-        <div class="categoria-titulo">Pães</div>
+        <!-- PIZZAS -->
+        <div class="categoria-titulo">🍕 Pizzas</div>
         
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Pizza Portuguesa', 'Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.', 'A partir de R$ 49,90')">
             <div class="item-info">
-                <div class="item-titulo">Pão Francês (kg)</div>
-                <div class="item-descricao">Pãozinho tradicional quentinho e crocante.</div>
-                <div class="item-preco">R$ 18,90</div>
+                <div class="item-titulo">Portuguesa</div>
+                <div class="item-descricao">Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.</div>
+                <div class="item-preco">A partir de R$ 49,90</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200" alt="Pão Francês">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Pizza Presunto e Mussarela', 'Mussarela, molho de tomate, presunto, cebola, pimentão, azeitona, tomate e orégano.', 'A partir de R$ 49,90')">
             <div class="item-info">
-                <div class="item-titulo">Pão de Queijo Unidade</div>
-                <div class="item-descricao">Feito com queijo canastra legítimo, assado na hora.</div>
-                <div class="item-preco">R$ 4,50</div>
+                <div class="item-titulo">Presunto e Mussarela</div>
+                <div class="item-descricao">Mussarela, molho de tomate, presunto, cebola, pimentão, azeitona, tomate e orégano.</div>
+                <div class="item-preco">A partir de R$ 49,90</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=200" alt="Pão de Queijo">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=200" alt="Pizza">
         </div>
 
-        <!-- SALGADOS -->
-        <div class="categoria-titulo">Salgados</div>
-
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Pizza Frango Catupiry', 'Mussarela, molho de tomate, peito de frango desfiado, catupiry, azeitona, cebola, pimentão, tomate e orégano.', 'A partir de R$ 49,90')">
             <div class="item-info">
-                <div class="item-titulo">Coxinha de Frango com Catupiry</div>
-                <div class="item-descricao">Massa leve de batata, recheio de frango desfiado e catupiry original.</div>
-                <div class="item-preco">R$ 8,50</div>
+                <div class="item-titulo">Frango Catupiry</div>
+                <div class="item-descricao">Mussarela, molho de tomate, peito de frango desfiado, catupiry, azeitona, cebola, pimentão, tomate e orégano.</div>
+                <div class="item-preco">A partir de R$ 49,90</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1626844131082-256783844137?w=200" alt="Coxinha">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Pizza Calabresa', 'Mussarela, molho de tomate, calabresa, azeitona, cebola, pimentão, tomate e orégano.', 'A partir de R$ 49,90')">
             <div class="item-info">
-                <div class="item-titulo">Empada de Palmito</div>
-                <div class="item-descricao">Massa podre tradicional derretendo na boca.</div>
-                <div class="item-preco">R$ 7,90</div>
+                <div class="item-titulo">Calabresa</div>
+                <div class="item-descricao">Mussarela, molho de tomate, calabresa, azeitona, cebola, pimentão, tomate e orégano.</div>
+                <div class="item-preco">A partir de R$ 49,90</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200" alt="Empada">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=200" alt="Pizza">
         </div>
 
-        <!-- SANDUÍCHES -->
-        <div class="categoria-titulo">Sanduíches</div>
-
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Pizza Frango com Bacon', 'Mussarela, molho de tomate, bacon, tomate, azeitona, cebola, pimentão e orégano.', 'A partir de R$ 49,90')">
             <div class="item-info">
-                <div class="item-titulo">Misto Quente Especial</div>
-                <div class="item-descricao">Pão de fôrma artesanal, presunto, queijo prato e manteiga na chapa.</div>
-                <div class="item-preco">R$ 12,00</div>
+                <div class="item-titulo">Frango com Bacon</div>
+                <div class="item-descricao">Mussarela, molho de tomate, bacon, tomate, azeitona, cebola, pimentão e orégano.</div>
+                <div class="item-preco">A partir de R$ 49,90</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200" alt="Misto Quente">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=200" alt="Pizza">
         </div>
 
-        <!-- BOLOS -->
-        <div class="categoria-titulo">Bolos</div>
+        <!-- ASSADOS -->
+        <div class="categoria-titulo">🍖 Serviço de Assados</div>
 
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Assado de Lombo', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
             <div class="item-info">
-                <div class="item-titulo">Fatia Bolo de Cenoura com Chocolate</div>
-                <div class="item-descricao">Bolo fofinho com cobertura generosa de brigadeiro.</div>
-                <div class="item-preco">R$ 9,50</div>
+                <div class="item-titulo">Lombo</div>
+                <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
+                <div class="item-preco">R$ 50,00</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200" alt="Bolo de Cenoura">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=200" alt="Assado">
         </div>
 
-        <!-- SOBREMESAS -->
-        <div class="categoria-titulo">Sobremesas</div>
-
-        <div class="item-card">
+        <div class="item-card" onclick="abrirModal('Assado de Pernil', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 130,00')">
             <div class="item-info">
-                <div class="item-titulo">Pudim de Leite Condensado</div>
-                <div class="item-descricao">Fatia individual super cremosa com calda de caramelo.</div>
-                <div class="item-preco">R$ 8,00</div>
+                <div class="item-titulo">Pernil</div>
+                <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
+                <div class="item-preco">R$ 130,00</div>
             </div>
-            <img class="item-imagem" src="https://images.unsplash.com/photo-1528975604071-b4dc52a2d18c?w=200" alt="Pudim">
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=200" alt="Assado">
+        </div>
+
+        <div class="item-card" onclick="abrirModal('Assado de Chester', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
+            <div class="item-info">
+                <div class="item-titulo">Chester</div>
+                <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
+                <div class="item-preco">R$ 50,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
+        </div>
+
+        <div class="item-card" onclick="abrirModal('Assado de Peru', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
+            <div class="item-info">
+                <div class="item-titulo">Peru</div>
+                <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
+                <div class="item-preco">R$ 50,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
+        </div>
+
+        <div class="item-card" onclick="abrirModal('Assado de Leitoa', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 150,00')">
+            <div class="item-info">
+                <div class="item-titulo">Leitoa</div>
+                <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
+                <div class="item-preco">R$ 150,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=200" alt="Assado">
         </div>
 
     </div>
 
+    <!-- JANELA DE PEDIDO (MODAL) -->
+    <div id="modalPedido" class="modal">
+        <div class="modal-content">
+            <div id="mTitulo" class="modal-titulo"></div>
+            <div id="mDesc" class="modal-desc"></div>
+            <div id="mPreco" style="font-weight: bold; color: #8c2a2a;"></div>
+            
+            <div class="qtd-control">
+                <button class="btn-qtd" onclick="alterarQtd(-1)">-</button>
+                <span id="qtdNumero" style="font-size: 18px; font-weight: bold;">1</span>
+                <button class="btn-qtd" onclick="alterarQtd(1)">+</button>
+            </div>
+
+            <button class="btn-pedir" onclick="enviarWhats()">Pedir pelo WhatsApp</button>
+            <button class="btn-fechar" onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        let qtd = 1;
+        let itemAtual = "";
+
+        function abrirModal(titulo, desc, preco) {
+            itemAtual = titulo;
+            qtd = 1;
+            document.getElementById('mTitulo').innerText = titulo;
+            document.getElementById('mDesc').innerText = desc;
+            document.getElementById('mPreco').innerText = preco;
+            document.getElementById('qtdNumero').innerText = qtd;
+            document.getElementById('modalPedido').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalPedido').style.display = 'none';
+        }
+
+        function alterarQtd(v) {
+            if (qtd + v >= 1) {
+                qtd += v;
+                document.getElementById('qtdNumero').innerText = qtd;
+            }
+        }
+
+        function enviarWhats() {
+            const fone = "553138354125";
+            const msg = `Olá! Gostaria de pedir: ${qtd}x ${itemAtual}`;
+            window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+    </script>
 </body>
 </html>
