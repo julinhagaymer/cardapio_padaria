@@ -17,7 +17,6 @@
         .item-preco { font-size: 15px; font-weight: 700; color: #222; }
         .item-imagem { width: 85px; height: 85px; border-radius: 8px; object-fit: cover; background-color: #eee; }
         
-        /* Modal do Pedido */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; text-align: left; max-height: 90vh; overflow-y: auto; }
         .modal-titulo { font-size: 18px; font-weight: bold; margin-bottom: 6px; text-align: center; }
@@ -30,6 +29,7 @@
         .adicionais-container { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
         .adicional-item { display: flex; justify-content: space-between; align-items: center; }
 
+        .preco-total { font-size: 18px; font-weight: bold; color: #8c2a2a; text-align: center; margin-top: 10px; }
         .qtd-control { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 15px 0; }
         .btn-qtd { background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; }
         .btn-pedir { background: #25d366; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; }
@@ -38,9 +38,54 @@
 </head>
 <body>
 
-    <header>❤️ Com Carinho</header>
+    <header>Com Carinho</header>
 
     <div class="container">
+
+        <!-- PÃES -->
+        <div class="categoria-titulo">🥖 Pães</div>
+        
+        <div class="item-card" onclick="abrirModalSimples('Pão Francês (kg)', 'Pãozinho tradicional quentinho e crocante.', 18.90)">
+            <div class="item-info">
+                <div class="item-titulo">Pão Francês (kg)</div>
+                <div class="item-descricao">Pãozinho tradicional quentinho e crocante.</div>
+                <div class="item-preco">R$ 18,90</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200" alt="Pão">
+        </div>
+
+        <div class="item-card" onclick="abrirModalSimples('Pão de Queijo', 'Feito com queijo canastra legítimo.', 4.50)">
+            <div class="item-info">
+                <div class="item-titulo">Pão de Queijo</div>
+                <div class="item-descricao">Feito com queijo canastra legítimo.</div>
+                <div class="item-preco">R$ 4,50</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=200" alt="Pão de Queijo">
+        </div>
+
+        <!-- SALGADOS -->
+        <div class="categoria-titulo">🥐 Salgados</div>
+
+        <div class="item-card" onclick="abrirModalSimples('Coxinha de Frango', 'Com catupiry original e massa de batata.', 8.50)">
+            <div class="item-info">
+                <div class="item-titulo">Coxinha de Frango</div>
+                <div class="item-descricao">Com catupiry original e massa de batata.</div>
+                <div class="item-preco">R$ 8,50</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1626844131082-256783844137?w=200" alt="Salgado">
+        </div>
+
+        <!-- TORTAS -->
+        <div class="categoria-titulo">🍰 Tortas</div>
+
+        <div class="item-card" onclick="abrirModalSimples('Fatia Torta de Frango', 'Recheio cremoso e bem temperado.', 12.00)">
+            <div class="item-info">
+                <div class="item-titulo">Fatia Torta de Frango</div>
+                <div class="item-descricao">Recheio cremoso e bem temperado.</div>
+                <div class="item-preco">R$ 12,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200" alt="Torta">
+        </div>
 
         <!-- PIZZAS -->
         <div class="categoria-titulo">🍕 Pizzas</div>
@@ -93,7 +138,7 @@
         <!-- ASSADOS -->
         <div class="categoria-titulo">🍖 Serviço de Assados</div>
 
-        <div class="item-card" onclick="abrirModalAssado('Lombo', 'Serviço de assar (a carne é por conta do cliente).', 50)">
+        <div class="item-card" onclick="abrirModalSimples('Assado de Lombo', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Lombo</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -102,7 +147,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModalAssado('Pernil', 'Serviço de assar (a carne é por conta do cliente).', 130)">
+        <div class="item-card" onclick="abrirModalSimples('Assado de Pernil', 'Serviço de assar (a carne é por conta do cliente).', 130)">
             <div class="item-info">
                 <div class="item-titulo">Pernil</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -111,7 +156,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModalAssado('Chester', 'Serviço de assar (a carne é por conta do cliente).', 50)">
+        <div class="item-card" onclick="abrirModalSimples('Assado de Chester', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Chester</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -120,7 +165,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModalAssado('Peru', 'Serviço de assar (a carne é por conta do cliente).', 50)">
+        <div class="item-card" onclick="abrirModalSimples('Assado de Peru', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Peru</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -129,7 +174,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModalAssado('Leitoa', 'Serviço de assar (a carne é por conta do cliente).', 150)">
+        <div class="item-card" onclick="abrirModalSimples('Assado de Leitoa', 'Serviço de assar (a carne é por conta do cliente).', 150)">
             <div class="item-info">
                 <div class="item-titulo">Leitoa</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -140,39 +185,37 @@
 
     </div>
 
-    <!-- MODAL -->
+    <!-- MODAL DE PEDIDO -->
     <div id="modalPedido" class="modal">
         <div class="modal-content">
             <div id="mTitulo" class="modal-titulo"></div>
             <div id="mDesc" class="modal-desc"></div>
             
-            <!-- Opções específicas para Pizzas -->
             <div id="secaoPizza" style="display:none;">
                 <div class="campo-grupo">
                     <label class="campo-label">Tamanho e Borda:</label>
-                    <select id="selectTamanhoBorda">
-                        <option value="25cm - 4 pedaços (Sem Borda)|49.90">25cm (4 pedaços) - Sem Borda - R$ 49,90</option>
-                        <option value="25cm - 4 pedaços (Com Borda)|59.90">25cm (4 pedaços) - Com Borda - R$ 59,90</option>
-                        <option value="30cm - 8 pedaços (Sem Borda)|59.90">30cm (8 pedaços) - Sem Borda - R$ 59,90</option>
-                        <option value="30cm - 8 pedaços (Com Borda)|69.90">30cm (8 pedaços) - Com Borda - R$ 69,90</option>
+                    <select id="selectTamanhoBorda" onchange="calcularPreco()">
+                        <option value="25 cm - 4 PEDAÇOS (SEM BORDA)|49.90">25 cm - 4 PEDAÇOS (SEM BORDA) - R$ 49,90</option>
+                        <option value="25 cm - 4 PEDAÇOS (COM BORDA)|59.90">25 cm - 4 PEDAÇOS (COM BORDA) - R$ 59,90</option>
+                        <option value="30 cm - 8 PEDAÇOS (SEM BORDA)|59.90">30 cm - 8 PEDAÇOS (SEM BORDA) - R$ 59,90</option>
+                        <option value="30 cm - 8 PEDAÇOS (COM BORDA)|69.90">30 cm - 8 PEDAÇOS (COM BORDA) - R$ 69,90</option>
                     </select>
                 </div>
 
                 <div class="campo-grupo">
-                    <label class="campo-label">Adicionais de Recheio (Opcional):</label>
+                    <label class="campo-label">Adicionais de Recheio:</label>
                     <div class="adicionais-container">
-                        <label class="adicional-item"><input type="checkbox" value="Catupiry (+R$ 8,00)" data-preco="8"> Catupiry <span>+R$ 8,00</span></label>
-                        <label class="adicional-item"><input type="checkbox" value="Cheddar (+R$ 8,00)" data-preco="8"> Cheddar <span>+R$ 8,00</span></label>
-                        <label class="adicional-item"><input type="checkbox" value="Bacon (+R$ 7,00)" data-preco="7"> Bacon <span>+R$ 7,00</span></label>
-                        <label class="adicional-item"><input type="checkbox" value="Palmito (+R$ 10,00)" data-preco="10"> Palmito <span>+R$ 10,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Catupiry (+R$ 8,00)" data-preco="8" onchange="calcularPreco()"> Catupiry <span>+R$ 8,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Cheddar (+R$ 8,00)" data-preco="8" onchange="calcularPreco()"> Cheddar <span>+R$ 8,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Bacon (+R$ 7,00)" data-preco="7" onchange="calcularPreco()"> Bacon <span>+R$ 7,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Palmito (+R$ 10,00)" data-preco="10" onchange="calcularPreco()"> Palmito <span>+R$ 10,00</span></label>
                     </div>
                 </div>
             </div>
 
-            <!-- Campo Retirar / Observações -->
             <div class="campo-grupo">
                 <label class="campo-label">Retirar ingredientes / Observações:</label>
-                <input type="text" id="inputRetirar" placeholder="Ex: Retirar cebola, salada, azeitona...">
+                <input type="text" id="inputRetirar" placeholder="Ex: Retirar cebola, azeitona, salada...">
             </div>
 
             <div class="qtd-control">
@@ -180,6 +223,8 @@
                 <span id="qtdNumero" style="font-size: 18px; font-weight: bold;">1</span>
                 <button class="btn-qtd" onclick="alterarQtd(1)">+</button>
             </div>
+
+            <div id="precoTotalExibicao" class="preco-total">Total: R$ 0,00</div>
 
             <button class="btn-pedir" onclick="enviarWhats()">Pedir pelo WhatsApp</button>
             <button class="btn-fechar" onclick="fecharModal()">Cancelar</button>
@@ -191,7 +236,7 @@
         let itemNome = "";
         let itemIngredientes = "";
         let tipoItem = ""; 
-        let precoBaseAssado = 0;
+        let precoBaseUnitario = 0;
 
         function abrirModalPizza(nome, ingredientes) {
             tipoItem = "pizza";
@@ -205,26 +250,27 @@
             document.getElementById('inputRetirar').value = '';
             document.getElementById('qtdNumero').innerText = qtd;
 
-            // Desmarca adicionais
             const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]');
             checkboxes.forEach(cb => cb.checked = false);
 
+            calcularPreco();
             document.getElementById('modalPedido').style.display = 'flex';
         }
 
-        function abrirModalAssado(nome, desc, preco) {
-            tipoItem = "assado";
+        function abrirModalSimples(nome, desc, preco) {
+            tipoItem = "simples";
             itemNome = nome;
             itemIngredientes = desc;
-            precoBaseAssado = preco;
+            precoBaseUnitario = preco;
             qtd = 1;
 
-            document.getElementById('mTitulo').innerText = "Assado de " + nome;
-            document.getElementById('mDesc').innerText = desc + " | R$ " + preco.toFixed(2);
+            document.getElementById('mTitulo').innerText = nome;
+            document.getElementById('mDesc').innerText = desc;
             document.getElementById('secaoPizza').style.display = 'none';
             document.getElementById('inputRetirar').value = '';
             document.getElementById('qtdNumero').innerText = qtd;
 
+            calcularPreco();
             document.getElementById('modalPedido').style.display = 'flex';
         }
 
@@ -236,7 +282,28 @@
             if (qtd + v >= 1) {
                 qtd += v;
                 document.getElementById('qtdNumero').innerText = qtd;
+                calcularPreco();
             }
+        }
+
+        function calcularPreco() {
+            let totalUnitario = 0;
+
+            if (tipoItem === "pizza") {
+                const select = document.getElementById('selectTamanhoBorda');
+                const precoPizza = parseFloat(select.value.split('|')[1]);
+                totalUnitario += precoPizza;
+
+                const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    totalUnitario += parseFloat(cb.getAttribute('data-preco'));
+                });
+            } else {
+                totalUnitario = precoBaseUnitario;
+            }
+
+            const totalGeral = totalUnitario * qtd;
+            document.getElementById('precoTotalExibicao').innerText = `Total: R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
         }
 
         function enviarWhats() {
@@ -248,7 +315,6 @@
                 const comboTamanho = document.getElementById('selectTamanhoBorda').value.split('|');
                 const opcaoTamanho = comboTamanho[0];
                 
-                // Pega adicionais selecionados
                 let adicionais = [];
                 const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]:checked');
                 checkboxes.forEach(cb => adicionais.push(cb.value));
@@ -260,13 +326,16 @@
                     mensagem += `*Adicionais:* ${adicionais.join(', ')}\n`;
                 }
             } else {
-                mensagem += `*Item:* Assado de ${itemNome} (Qtd: ${qtd})\n`;
+                mensagem += `*Item:* ${itemNome} (Qtd: ${qtd})\n`;
                 mensagem += `*Descrição:* ${itemIngredientes}\n`;
             }
 
             if (obs.trim() !== "") {
                 mensagem += `*Observações/Retirar:* ${obs}\n`;
             }
+
+            const valorFinal = document.getElementById('precoTotalExibicao').innerText;
+            mensagem += `\n*${valorFinal}*`;
 
             window.open(`https://wa.me/${fone}?text=${encodeURIComponent(mensagem)}`, '_blank');
         }
