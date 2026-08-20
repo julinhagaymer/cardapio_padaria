@@ -19,13 +19,21 @@
         
         /* Modal do Pedido */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; }
-        .modal-titulo { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-        .modal-desc { font-size: 14px; color: #666; margin-bottom: 16px; }
-        .qtd-control { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; text-align: left; max-height: 90vh; overflow-y: auto; }
+        .modal-titulo { font-size: 18px; font-weight: bold; margin-bottom: 6px; text-align: center; }
+        .modal-desc { font-size: 13px; color: #666; margin-bottom: 12px; text-align: center; }
+        
+        .campo-grupo { margin-top: 12px; }
+        .campo-label { font-size: 14px; font-weight: bold; margin-bottom: 6px; display: block; color: #444; }
+        select, input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; margin-bottom: 8px; }
+        
+        .adicionais-container { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+        .adicional-item { display: flex; justify-content: space-between; align-items: center; }
+
+        .qtd-control { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 15px 0; }
         .btn-qtd { background: #eee; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .btn-pedir { background: #25d366; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; }
-        .btn-fechar { background: transparent; border: none; color: #888; margin-top: 10px; cursor: pointer; }
+        .btn-pedir { background: #25d366; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-top: 10px; }
+        .btn-fechar { background: transparent; border: none; color: #888; width: 100%; text-align: center; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -37,7 +45,7 @@
         <!-- PIZZAS -->
         <div class="categoria-titulo">🍕 Pizzas</div>
         
-        <div class="item-card" onclick="abrirModal('Pizza Portuguesa', 'Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.', 'A partir de R$ 49,90')">
+        <div class="item-card" onclick="abrirModalPizza('Portuguesa', 'Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.')">
             <div class="item-info">
                 <div class="item-titulo">Portuguesa</div>
                 <div class="item-descricao">Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.</div>
@@ -46,7 +54,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Pizza Presunto e Mussarela', 'Mussarela, molho de tomate, presunto, cebola, pimentão, azeitona, tomate e orégano.', 'A partir de R$ 49,90')">
+        <div class="item-card" onclick="abrirModalPizza('Presunto e Mussarela', 'Mussarela, molho de tomate, presunto, cebola, pimentão, azeitona, tomate e orégano.')">
             <div class="item-info">
                 <div class="item-titulo">Presunto e Mussarela</div>
                 <div class="item-descricao">Mussarela, molho de tomate, presunto, cebola, pimentão, azeitona, tomate e orégano.</div>
@@ -55,7 +63,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Pizza Frango Catupiry', 'Mussarela, molho de tomate, peito de frango desfiado, catupiry, azeitona, cebola, pimentão, tomate e orégano.', 'A partir de R$ 49,90')">
+        <div class="item-card" onclick="abrirModalPizza('Frango Catupiry', 'Mussarela, molho de tomate, peito de frango desfiado, catupiry, azeitona, cebola, pimentão, tomate e orégano.')">
             <div class="item-info">
                 <div class="item-titulo">Frango Catupiry</div>
                 <div class="item-descricao">Mussarela, molho de tomate, peito de frango desfiado, catupiry, azeitona, cebola, pimentão, tomate e orégano.</div>
@@ -64,7 +72,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Pizza Calabresa', 'Mussarela, molho de tomate, calabresa, azeitona, cebola, pimentão, tomate e orégano.', 'A partir de R$ 49,90')">
+        <div class="item-card" onclick="abrirModalPizza('Calabresa', 'Mussarela, molho de tomate, calabresa, azeitona, cebola, pimentão, tomate e orégano.')">
             <div class="item-info">
                 <div class="item-titulo">Calabresa</div>
                 <div class="item-descricao">Mussarela, molho de tomate, calabresa, azeitona, cebola, pimentão, tomate e orégano.</div>
@@ -73,7 +81,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=200" alt="Pizza">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Pizza Frango com Bacon', 'Mussarela, molho de tomate, bacon, tomate, azeitona, cebola, pimentão e orégano.', 'A partir de R$ 49,90')">
+        <div class="item-card" onclick="abrirModalPizza('Frango com Bacon', 'Mussarela, molho de tomate, bacon, tomate, azeitona, cebola, pimentão e orégano.')">
             <div class="item-info">
                 <div class="item-titulo">Frango com Bacon</div>
                 <div class="item-descricao">Mussarela, molho de tomate, bacon, tomate, azeitona, cebola, pimentão e orégano.</div>
@@ -85,7 +93,7 @@
         <!-- ASSADOS -->
         <div class="categoria-titulo">🍖 Serviço de Assados</div>
 
-        <div class="item-card" onclick="abrirModal('Assado de Lombo', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
+        <div class="item-card" onclick="abrirModalAssado('Lombo', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Lombo</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -94,7 +102,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Assado de Pernil', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 130,00')">
+        <div class="item-card" onclick="abrirModalAssado('Pernil', 'Serviço de assar (a carne é por conta do cliente).', 130)">
             <div class="item-info">
                 <div class="item-titulo">Pernil</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -103,7 +111,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Assado de Chester', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
+        <div class="item-card" onclick="abrirModalAssado('Chester', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Chester</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -112,7 +120,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Assado de Peru', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 50,00')">
+        <div class="item-card" onclick="abrirModalAssado('Peru', 'Serviço de assar (a carne é por conta do cliente).', 50)">
             <div class="item-info">
                 <div class="item-titulo">Peru</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -121,7 +129,7 @@
             <img class="item-imagem" src="https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=200" alt="Assado">
         </div>
 
-        <div class="item-card" onclick="abrirModal('Assado de Leitoa', 'Serviço de assar (a carne é por conta do cliente).', 'R$ 150,00')">
+        <div class="item-card" onclick="abrirModalAssado('Leitoa', 'Serviço de assar (a carne é por conta do cliente).', 150)">
             <div class="item-info">
                 <div class="item-titulo">Leitoa</div>
                 <div class="item-descricao">Serviço de assar (a carne é por conta do cliente).</div>
@@ -132,13 +140,41 @@
 
     </div>
 
-    <!-- JANELA DE PEDIDO (MODAL) -->
+    <!-- MODAL -->
     <div id="modalPedido" class="modal">
         <div class="modal-content">
             <div id="mTitulo" class="modal-titulo"></div>
             <div id="mDesc" class="modal-desc"></div>
-            <div id="mPreco" style="font-weight: bold; color: #8c2a2a;"></div>
             
+            <!-- Opções específicas para Pizzas -->
+            <div id="secaoPizza" style="display:none;">
+                <div class="campo-grupo">
+                    <label class="campo-label">Tamanho e Borda:</label>
+                    <select id="selectTamanhoBorda">
+                        <option value="25cm - 4 pedaços (Sem Borda)|49.90">25cm (4 pedaços) - Sem Borda - R$ 49,90</option>
+                        <option value="25cm - 4 pedaços (Com Borda)|59.90">25cm (4 pedaços) - Com Borda - R$ 59,90</option>
+                        <option value="30cm - 8 pedaços (Sem Borda)|59.90">30cm (8 pedaços) - Sem Borda - R$ 59,90</option>
+                        <option value="30cm - 8 pedaços (Com Borda)|69.90">30cm (8 pedaços) - Com Borda - R$ 69,90</option>
+                    </select>
+                </div>
+
+                <div class="campo-grupo">
+                    <label class="campo-label">Adicionais de Recheio (Opcional):</label>
+                    <div class="adicionais-container">
+                        <label class="adicional-item"><input type="checkbox" value="Catupiry (+R$ 8,00)" data-preco="8"> Catupiry <span>+R$ 8,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Cheddar (+R$ 8,00)" data-preco="8"> Cheddar <span>+R$ 8,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Bacon (+R$ 7,00)" data-preco="7"> Bacon <span>+R$ 7,00</span></label>
+                        <label class="adicional-item"><input type="checkbox" value="Palmito (+R$ 10,00)" data-preco="10"> Palmito <span>+R$ 10,00</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campo Retirar / Observações -->
+            <div class="campo-grupo">
+                <label class="campo-label">Retirar ingredientes / Observações:</label>
+                <input type="text" id="inputRetirar" placeholder="Ex: Retirar cebola, salada, azeitona...">
+            </div>
+
             <div class="qtd-control">
                 <button class="btn-qtd" onclick="alterarQtd(-1)">-</button>
                 <span id="qtdNumero" style="font-size: 18px; font-weight: bold;">1</span>
@@ -152,15 +188,43 @@
 
     <script>
         let qtd = 1;
-        let itemAtual = "";
+        let itemNome = "";
+        let itemIngredientes = "";
+        let tipoItem = ""; 
+        let precoBaseAssado = 0;
 
-        function abrirModal(titulo, desc, preco) {
-            itemAtual = titulo;
+        function abrirModalPizza(nome, ingredientes) {
+            tipoItem = "pizza";
+            itemNome = nome;
+            itemIngredientes = ingredientes;
             qtd = 1;
-            document.getElementById('mTitulo').innerText = titulo;
-            document.getElementById('mDesc').innerText = desc;
-            document.getElementById('mPreco').innerText = preco;
+
+            document.getElementById('mTitulo').innerText = "Pizza " + nome;
+            document.getElementById('mDesc').innerText = "Ingredientes: " + ingredientes;
+            document.getElementById('secaoPizza').style.display = 'block';
+            document.getElementById('inputRetirar').value = '';
             document.getElementById('qtdNumero').innerText = qtd;
+
+            // Desmarca adicionais
+            const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+
+            document.getElementById('modalPedido').style.display = 'flex';
+        }
+
+        function abrirModalAssado(nome, desc, preco) {
+            tipoItem = "assado";
+            itemNome = nome;
+            itemIngredientes = desc;
+            precoBaseAssado = preco;
+            qtd = 1;
+
+            document.getElementById('mTitulo').innerText = "Assado de " + nome;
+            document.getElementById('mDesc').innerText = desc + " | R$ " + preco.toFixed(2);
+            document.getElementById('secaoPizza').style.display = 'none';
+            document.getElementById('inputRetirar').value = '';
+            document.getElementById('qtdNumero').innerText = qtd;
+
             document.getElementById('modalPedido').style.display = 'flex';
         }
 
@@ -177,8 +241,34 @@
 
         function enviarWhats() {
             const fone = "553138354125";
-            const msg = `Olá! Gostaria de pedir: ${qtd}x ${itemAtual}`;
-            window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+            const obs = document.getElementById('inputRetirar').value;
+            let mensagem = `Olá! Gostaria de fazer um pedido:\n\n`;
+
+            if (tipoItem === "pizza") {
+                const comboTamanho = document.getElementById('selectTamanhoBorda').value.split('|');
+                const opcaoTamanho = comboTamanho[0];
+                
+                // Pega adicionais selecionados
+                let adicionais = [];
+                const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => adicionais.push(cb.value));
+
+                mensagem += `*Item:* Pizza ${itemNome} (Qtd: ${qtd})\n`;
+                mensagem += `*Ingredientes:* ${itemIngredientes}\n`;
+                mensagem += `*Opção:* ${opcaoTamanho}\n`;
+                if (adicionais.length > 0) {
+                    mensagem += `*Adicionais:* ${adicionais.join(', ')}\n`;
+                }
+            } else {
+                mensagem += `*Item:* Assado de ${itemNome} (Qtd: ${qtd})\n`;
+                mensagem += `*Descrição:* ${itemIngredientes}\n`;
+            }
+
+            if (obs.trim() !== "") {
+                mensagem += `*Observações/Retirar:* ${obs}\n`;
+            }
+
+            window.open(`https://wa.me/${fone}?text=${encodeURIComponent(mensagem)}`, '_blank');
         }
     </script>
 </body>
