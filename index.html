@@ -27,19 +27,6 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
-        /* Busca */
-        .busca-container { padding: 10px 16px; background: #fff; }
-        .busca-box {
-            display: flex;
-            align-items: center;
-            background: #f2f2f2;
-            border-radius: 8px;
-            padding: 8px 12px;
-            gap: 8px;
-        }
-        .busca-box svg { fill: #777; width: 18px; height: 18px; }
-        .busca-input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
-
         /* Categorias Bar - Estilo IG / iFood */
         .categorias-bar {
             display: flex;
@@ -75,8 +62,8 @@
         .container { max-width: 600px; margin: 0 auto; padding: 0 16px; }
         
         .categoria-secao {
-            padding-top: 130px; /* Offset para o topo fixo */
-            margin-top: -110px;
+            padding-top: 100px; /* Ajustado sem a barra de busca */
+            margin-top: -80px;
         }
 
         .categoria-titulo { 
@@ -129,16 +116,9 @@
 </head>
 <body>
 
-    <!-- Topo Fixo com Título, Busca e Seções -->
+    <!-- Topo Fixo com Título e Seções -->
     <div class="fixed-top">
         <header>Com Carinho</header>
-
-        <div class="busca-container">
-            <div class="busca-box">
-                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="inputBusca" class="busca-input" placeholder="Buscar no cardápio..." oninput="filtrarProdutos()">
-            </div>
-        </div>
 
         <!-- MENU DAS SEÇÕES -->
         <div class="categorias-bar" id="categoriasBar">
@@ -369,28 +349,6 @@
             document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
             botao.classList.add('active');
             botao.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-
-        // Filtro de Busca em Tempo Real
-        function filtrarProdutos() {
-            const termo = document.getElementById('inputBusca').value.toLowerCase();
-            const cards = document.querySelectorAll('.item-card');
-            const secoes = document.querySelectorAll('.categoria-secao');
-
-            cards.forEach(card => {
-                const titulo = card.querySelector('.item-titulo').innerText.toLowerCase();
-                const desc = card.querySelector('.item-descricao').innerText.toLowerCase();
-                if (titulo.includes(termo) || desc.includes(termo)) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            secoes.forEach(secao => {
-                const visiveis = secao.querySelectorAll('.item-card[style="display: flex;"]');
-                secao.style.display = (termo !== "" && visiveis.length === 0) ? 'none' : 'block';
-            });
         }
 
         // Funções do Modal
