@@ -3,22 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardápio da Padaria</title>
+    <title>Cardápio - Padaria</title>
     <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #faf6f0; }
-        h1 { color: #5c3a21; text-align: center; }
-        .categoria { margin-top: 20px; font-weight: bold; color: #8c531b; }
-        .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0d5c1; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f7f7f7;
+            color: #333;
+            padding-bottom: 30px;
+        }
+
+        header {
+            background-color: #ffffff;
+            padding: 16px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #e6e6e6;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .categoria-titulo {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 24px 0 12px 0;
+            color: #222;
+        }
+
+        .item-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+            border: 1px solid #efefef;
+        }
+
+        .item-info {
+            flex: 1;
+            padding-right: 12px;
+        }
+
+        .item-titulo {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .item-descricao {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .item-preco {
+            font-size: 15px;
+            font-weight: 700;
+            color: #222;
+        }
+
+        .item-imagem {
+            width: 90px;
+            height: 90px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #eee;
+        }
     </style>
 </head>
 <body>
-    <h1>🥖 Padaria & Confeitaria</h1>
-    <div class="categoria">Pães & Salgados</div>
-    <div class="item"><span>Pão Francês (kg)</span><span>R$ 18,90</span></div>
-    <div class="item"><span>Croissant de Queijo</span><span>R$ 12,00</span></div>
-    
-    <div class="categoria">Bebidas</div>
-    <div class="item"><span>Café Espresso</span><span>R$ 6,00</span></div>
-    <div class="item"><span>Suco Natural 500ml</span><span>R$ 10,00</span></div>
+
+    <header>
+        🥖 Padaria & Confeitaria
+    </header>
+
+    <div class="container">
+
+        <!-- PÃES -->
+        <div class="categoria-titulo">Pães</div>
+        
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Pão Francês (kg)</div>
+                <div class="item-descricao">Pãozinho tradicional quentinho e crocante.</div>
+                <div class="item-preco">R$ 18,90</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200" alt="Pão Francês">
+        </div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Pão de Queijo Unidade</div>
+                <div class="item-descricao">Feito com queijo canastra legítimo, assado na hora.</div>
+                <div class="item-preco">R$ 4,50</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=200" alt="Pão de Queijo">
+        </div>
+
+        <!-- SALGADOS -->
+        <div class="categoria-titulo">Salgados</div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Coxinha de Frango com Catupiry</div>
+                <div class="item-descricao">Massa leve de batata, recheio de frango desfiado e catupiry original.</div>
+                <div class="item-preco">R$ 8,50</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1626844131082-256783844137?w=200" alt="Coxinha">
+        </div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Empada de Palmito</div>
+                <div class="item-descricao">Massa podre tradicional derretendo na boca.</div>
+                <div class="item-preco">R$ 7,90</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200" alt="Empada">
+        </div>
+
+        <!-- SANDUÍCHES -->
+        <div class="categoria-titulo">Sanduíches</div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Misto Quente Especial</div>
+                <div class="item-descricao">Pão de fôrma artesanal, presunto, queijo prato e manteiga na chapa.</div>
+                <div class="item-preco">R$ 12,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200" alt="Misto Quente">
+        </div>
+
+        <!-- BOLOS -->
+        <div class="categoria-titulo">Bolos</div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Fatia Bolo de Cenoura com Chocolate</div>
+                <div class="item-descricao">Bolo fofinho com cobertura generosa de brigadeiro.</div>
+                <div class="item-preco">R$ 9,50</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200" alt="Bolo de Cenoura">
+        </div>
+
+        <!-- SOBREMESAS -->
+        <div class="categoria-titulo">Sobremesas</div>
+
+        <div class="item-card">
+            <div class="item-info">
+                <div class="item-titulo">Pudim de Leite Condensado</div>
+                <div class="item-descricao">Fatia individual super cremosa com calda de caramelo.</div>
+                <div class="item-preco">R$ 8,00</div>
+            </div>
+            <img class="item-imagem" src="https://images.unsplash.com/photo-1528975604071-b4dc52a2d18c?w=200" alt="Pudim">
+        </div>
+
+    </div>
+
 </body>
 </html>
