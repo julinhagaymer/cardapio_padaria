@@ -9,13 +9,13 @@
         html { scroll-behavior: smooth; }
         body { background-color: #f7f7f7; color: #333; padding-bottom: 40px; }
         
-        /* Header e Topo Sticky */
-        .header-container {
+        /* Fixed Header & Bar */
+        .fixed-top {
             position: sticky;
             top: 0;
             background-color: #ffffff;
-            z-index: 50;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         header { 
@@ -27,12 +27,8 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
-        /* Barra de Busca */
-        .busca-container {
-            padding: 10px 16px;
-            background: #fff;
-        }
-
+        /* Busca */
+        .busca-container { padding: 10px 16px; background: #fff; }
         .busca-box {
             display: flex;
             align-items: center;
@@ -41,67 +37,52 @@
             padding: 8px 12px;
             gap: 8px;
         }
+        .busca-box svg { fill: #777; width: 18px; height: 18px; }
+        .busca-input { border: none; background: transparent; width: 100%; outline: none; font-size: 14px; }
 
-        .busca-box svg {
-            fill: #777;
-            width: 18px;
-            height: 18px;
-        }
-
-        .busca-input {
-            border: none;
-            background: transparent;
-            width: 100%;
-            outline: none;
-            font-size: 14px;
-            color: #333;
-        }
-
-        /* Categorias Navegáveis (Carrossel Horizontal) */
-        .categorias-nav {
+        /* Categorias Bar - Estilo IG / iFood */
+        .categorias-bar {
             display: flex;
             overflow-x: auto;
             white-space: nowrap;
             background: #fff;
             border-bottom: 1px solid #e6e6e6;
             padding: 0 10px;
-            scrollbar-width: none; /* Firefox */
+            -webkit-overflow-scrolling: touch;
         }
+        .categorias-bar::-webkit-scrollbar { display: none; }
 
-        .categorias-nav::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-
-        .cat-item {
-            display: inline-block;
+        .cat-btn {
+            background: none;
+            border: none;
             padding: 12px 16px;
             font-size: 15px;
             font-weight: 500;
             color: #666;
             cursor: pointer;
-            text-decoration: none;
             border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
-            user-select: none;
+            outline: none;
         }
 
-        .cat-item.active {
+        .cat-btn.active {
             color: #000;
             font-weight: 700;
             border-bottom: 3px solid #8c2a2a;
         }
 
-        /* Conteúdo do Cardápio */
+        /* Container e Conteúdo */
         .container { max-width: 600px; margin: 0 auto; padding: 0 16px; }
         
         .categoria-secao {
-            scroll-margin-top: 120px; /* Offset para a navegação sticky */
+            padding-top: 130px; /* Offset para o topo fixo */
+            margin-top: -110px;
         }
 
         .categoria-titulo { 
             font-size: 20px; 
             font-weight: 700; 
-            margin: 24px 0 12px 0; 
+            margin: 16px 0 12px 0; 
             color: #222; 
             border-bottom: 2px solid #8c2a2a; 
             padding-bottom: 4px; 
@@ -126,8 +107,8 @@
         .item-preco { font-size: 15px; font-weight: 700; color: #222; }
         .item-imagem { width: 85px; height: 85px; border-radius: 8px; object-fit: cover; background-color: #eee; }
         
-        /* Modal de Pedido */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 200; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 450px; text-align: left; max-height: 90vh; overflow-y: auto; }
         .modal-titulo { font-size: 18px; font-weight: bold; margin-bottom: 6px; text-align: center; }
         .modal-desc { font-size: 13px; color: #666; margin-bottom: 12px; text-align: center; }
@@ -148,31 +129,31 @@
 </head>
 <body>
 
-    <div class="header-container">
+    <!-- Topo Fixo com Título, Busca e Seções -->
+    <div class="fixed-top">
         <header>Com Carinho</header>
 
-        <!-- Campo de Busca -->
         <div class="busca-container">
             <div class="busca-box">
                 <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="inputBusca" class="busca-input" placeholder="Buscar no cardápio" oninput="filtrarProdutos()">
+                <input type="text" id="inputBusca" class="busca-input" placeholder="Buscar no cardápio..." oninput="filtrarProdutos()">
             </div>
         </div>
 
-        <!-- Barra de Categorias Horizontal -->
-        <nav class="categorias-nav" id="categoriasNav">
-            <a href="#paes" class="cat-item active" onclick="selecionarCategoria(this)">- Pães</a>
-            <a href="#salgados" class="cat-item" onclick="selecionarCategoria(this)">- Salgados</a>
-            <a href="#tortas" class="cat-item" onclick="selecionarCategoria(this)">- Tortas</a>
-            <a href="#pizzas" class="cat-item" onclick="selecionarCategoria(this)">- Pizzas</a>
-            <a href="#assados" class="cat-item" onclick="selecionarCategoria(this)">- Assados</a>
-        </nav>
+        <!-- MENU DAS SEÇÕES -->
+        <div class="categorias-bar" id="categoriasBar">
+            <button class="cat-btn active" onclick="irParaSecao('paes', this)">- Pães</button>
+            <button class="cat-btn" onclick="irParaSecao('salgados', this)">- Salgados</button>
+            <button class="cat-btn" onclick="irParaSecao('tortas', this)">- Tortas</button>
+            <button class="cat-btn" onclick="irParaSecao('pizzas', this)">- Pizzas</button>
+            <button class="cat-btn" onclick="irParaSecao('assados', this)">- Assados</button>
+        </div>
     </div>
 
     <div class="container">
 
-        <!-- PÃES -->
-        <div id="paes" class="categoria-secao">
+        <!-- SEÇÃO: PÃES -->
+        <section id="paes" class="categoria-secao">
             <div class="categoria-titulo">🥖 Pães</div>
             
             <div class="item-card" onclick="abrirModalSimples('Pão Francês (kg)', 'Pãozinho tradicional quentinho e crocante.', 18.90)">
@@ -192,10 +173,10 @@
                 </div>
                 <img class="item-imagem" src="https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=200" alt="Pão de Queijo">
             </div>
-        </div>
+        </section>
 
-        <!-- SALGADOS -->
-        <div id="salgados" class="categoria-secao">
+        <!-- SEÇÃO: SALGADOS -->
+        <section id="salgados" class="categoria-secao">
             <div class="categoria-titulo">🥐 Salgados</div>
 
             <div class="item-card" onclick="abrirModalSimples('Coxinha de Frango', 'Com catupiry original e massa de batata.', 8.50)">
@@ -206,10 +187,10 @@
                 </div>
                 <img class="item-imagem" src="https://images.unsplash.com/photo-1626844131082-256783844137?w=200" alt="Salgado">
             </div>
-        </div>
+        </section>
 
-        <!-- TORTAS -->
-        <div id="tortas" class="categoria-secao">
+        <!-- SEÇÃO: TORTAS -->
+        <section id="tortas" class="categoria-secao">
             <div class="categoria-titulo">🍰 Tortas</div>
 
             <div class="item-card" onclick="abrirModalSimples('Fatia Torta de Frango', 'Recheio cremoso e bem temperado.', 12.00)">
@@ -220,10 +201,10 @@
                 </div>
                 <img class="item-imagem" src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=200" alt="Torta">
             </div>
-        </div>
+        </section>
 
-        <!-- PIZZAS -->
-        <div id="pizzas" class="categoria-secao">
+        <!-- SEÇÃO: PIZZAS -->
+        <section id="pizzas" class="categoria-secao">
             <div class="categoria-titulo">🍕 Pizzas</div>
             
             <div class="item-card" onclick="abrirModalPizza('Portuguesa', 'Mussarela, presunto, calabresa, molho de tomate, ovo, bacon, azeitona, cebola, pimentão, tomate, palmito e orégano.')">
@@ -270,10 +251,10 @@
                 </div>
                 <img class="item-imagem" src="https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=200" alt="Pizza">
             </div>
-        </div>
+        </section>
 
-        <!-- ASSADOS -->
-        <div id="assados" class="categoria-secao">
+        <!-- SEÇÃO: ASSADOS -->
+        <section id="assados" class="categoria-secao">
             <div class="categoria-titulo">🍖 Serviço de Assados</div>
 
             <div class="item-card" onclick="abrirModalSimples('Assado de Lombo', 'Serviço de assar (a carne é por conta do cliente).', 50)">
@@ -320,7 +301,7 @@
                 </div>
                 <img class="item-imagem" src="https://images.unsplash.com/photo-1544025162-d76694265947?w=200" alt="Assado">
             </div>
-        </div>
+        </section>
 
     </div>
 
@@ -377,17 +358,20 @@
         let tipoItem = ""; 
         let precoBaseUnitario = 0;
 
-        // Seleção de Categoria Ativa na Navegação
-        function selecionarCategoria(elemento) {
-            const items = document.querySelectorAll('.cat-item');
-            items.forEach(el => el.classList.remove('active'));
-            elemento.classList.add('active');
-            
-            // Centraliza a aba no menu horizontal
-            elemento.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        // Função para ir direto para a seção ao clicar na aba
+        function irParaSecao(idSecao, botao) {
+            const el = document.getElementById(idSecao);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            // Ativa o botão selecionado
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            botao.classList.add('active');
+            botao.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
 
-        // Filtro de Busca de Produtos
+        // Filtro de Busca em Tempo Real
         function filtrarProdutos() {
             const termo = document.getElementById('inputBusca').value.toLowerCase();
             const cards = document.querySelectorAll('.item-card');
@@ -396,7 +380,6 @@
             cards.forEach(card => {
                 const titulo = card.querySelector('.item-titulo').innerText.toLowerCase();
                 const desc = card.querySelector('.item-descricao').innerText.toLowerCase();
-                
                 if (titulo.includes(termo) || desc.includes(termo)) {
                     card.style.display = 'flex';
                 } else {
@@ -404,18 +387,13 @@
                 }
             });
 
-            // Oculta títulos de seções vazias ao buscar
             secoes.forEach(secao => {
                 const visiveis = secao.querySelectorAll('.item-card[style="display: flex;"]');
-                if (termo !== "" && visiveis.length === 0) {
-                    secao.style.display = 'none';
-                } else {
-                    secao.style.display = 'block';
-                }
+                secao.style.display = (termo !== "" && visiveis.length === 0) ? 'none' : 'block';
             });
         }
 
-        // Modais e Lógica do Pedido
+        // Funções do Modal
         function abrirModalPizza(nome, ingredientes) {
             tipoItem = "pizza";
             itemNome = nome;
@@ -428,8 +406,7 @@
             document.getElementById('inputRetirar').value = '';
             document.getElementById('qtdNumero').innerText = qtd;
 
-            const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]');
-            checkboxes.forEach(cb => cb.checked = false);
+            document.querySelectorAll('#secaoPizza input[type="checkbox"]').forEach(cb => cb.checked = false);
 
             calcularPreco();
             document.getElementById('modalPedido').style.display = 'flex';
@@ -494,8 +471,7 @@
                 const opcaoTamanho = comboTamanho[0];
                 
                 let adicionais = [];
-                const checkboxes = document.querySelectorAll('#secaoPizza input[type="checkbox"]:checked');
-                checkboxes.forEach(cb => adicionais.push(cb.value));
+                document.querySelectorAll('#secaoPizza input[type="checkbox"]:checked').forEach(cb => adicionais.push(cb.value));
 
                 mensagem += `*Item:* Pizza ${itemNome} (Qtd: ${qtd})\n`;
                 mensagem += `*Ingredientes:* ${itemIngredientes}\n`;
