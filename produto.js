@@ -1,42 +1,103 @@
 "use strict";
 
-/* Comportamento da página do produto (o HTML é gerado pelo PHP):
-   escolha de tamanho/borda/adicionais, quantidade, total e envio pelo WhatsApp. */
-
 (function () {
-    const raiz = document.querySelector(".container[data-tipo]");
-    if (!raiz) return; // página de "produto não encontrado"
+    const params = new URLSearchParams(location.search);
+    const produto = buscarProduto(params.get("id"));
 
-    const ehPizza = raiz.getAttribute("data-tipo") === "pizza";
-    const nome = raiz.getAttribute("data-nome") || "";
-    const descricao = raiz.getAttribute("data-descricao") || "";
-    const precoBase = parseFloat(raiz.getAttribute("data-preco")) || 0;
-    const whatsapp = raiz.getAttribute("data-whatsapp") || "";
+    const elFoto = document.getElementById("produtoFoto");
+    const elNome = document.getElementById("produtoNome");
+    const elDesc = document.getElementById("produtoDesc");
+    const elPreco = document.getElementById("produtoPreco");
+    const container = document.querySelector(".container");
+    const rodape = document.querySelector(".rodape");
 
+    if (!produto) {
+        elFoto.remove();
+        elNome.textContent = "Produto não encontrado";
+        elDesc.textContent = "Volte ao cardápio e escolha um item.";
+        document.querySelectorAll(".secao").forEach(function (s) { s.remove(); });
+        if (rodape) rodape.remove();
+        return;
+    }
+
+    const ehPizza = produto.tipo === "pizza";
     let qtd = 1;
 
-    function formatarMoeda(valor) {
-        return "R$ " + Number(valor).toFixed(2).replace(".", ",");
+    elNome.textContent = ehPizza ? "Pizza " + produto.nome : produto.nome;
+    elDesc.textContent = produto.descricao;
+
+    const urlImagem = imagemSegura(produto.imagem);
+    if (urlImagem) {
+        elFoto.style.backgroundImage = 'url("' + urlImagem + '")';
     }
 
-    function dadosLinha(input) {
-        const linha = input.closest(".linha");
-        const nomeEl = linha ? linha.querySelector(".linha-nome") : null;
-        return {
-            rotulo: nomeEl ? nomeEl.textContent : "",
-            preco: parseFloat(input.getAttribute("data-preco")) || 0,
-        };
+    const secaoTamanho = document.getElementById("secaoTamanho");
+    const secaoBorda = document.getElementById("secaoBorda");
+    const secaoAdicionais = document.getElementById("secaoAdicionais");
+
+    if (ehPizza) {
+        preencherOpcoes(document.getElementById("listaTamanhos"), TAMANHOS, "radio", "tamanho");
+        preencherOpcoes(document.getElementById("listaBordas"), BORDAS, "radio", "borda");
+        preencherOpcoes(document.getElementById("listaAdicionais"), ADICIONAIS, "checkbox", "adicional");
+    } else {
+        secaoTamanho.remove();
+        secaoBorda.remove();
+        secaoAdicionais.remove();
+        container.classList.add("simples");
+        elPreco.textContent = formatarMoeda(produto.preco);
+        elPreco.hidden = false;
     }
 
-    function radioSelecionado(grupo) {
+    function preencherOpcoes(alvo, itens, tipoInput, grupo) {
+        itens.forEach(function (item, indice) {
+            const label = document.createElement("label");
+            label.className = "linha";
+
+            const nome = document.createElement("span");
+            nome.className = "linha-nome";
+            nome.textContent = item.rotulo;
+            label.appendChild(nome);
+
+            if (item.preco) {
+                const preco = document.createElement("span");
+                preco.className = "linha-preco";
+                // Tamanho é uma escolha (preço cheio); borda e adicionais somam ao valor.
+                preco.textContent = (grupo === "tamanho" ? "" : "+ ") + formatarMoeda(item.preco);
+                label.appendChild(preco);
+            }
+
+            const input = document.createElement("input");
+            input.type = tipoInput;
+            input.value = String(indice);
+            if (tipoInput === "radio") input.name = grupo;
+            input.addEventListener("change", calcular);
+            label.appendChild(input);
+
+            alvo.appendChild(label);
+        });
+    }
+
+    const observacao = document.getElementById("observacao");
+    const contador = document.getElementById("contadorObs");
+    observacao.setAttribute("maxlength", String(LIMITE_OBSERVACAO));
+    observacao.addEventListener("input", function () {
+        if (observacao.value.length > LIMITE_OBSERVACAO) {
+            observacao.value = observacao.value.slice(0, LIMITE_OBSERVACAO);
+        }
+        contador.textContent = String(observacao.value.length);
+    });
+
+    function selecionadoRadio(grupo, lista) {
         const el = document.querySelector('input[name="' + grupo + '"]:checked');
-        return el ? dadosLinha(el) : null;
+        return el ? lista[Number(el.value)] : null;
     }
-    function tamanhoSelecionado() { return radioSelecionado("tamanho"); }
-    function bordaSelecionada() { return radioSelecionado("borda"); }
+    function tamanhoSelecionado() { return selecionadoRadio("tamanho", TAMANHOS); }
+    function bordaSelecionada() { return selecionadoRadio("borda", BORDAS); }
     function adicionaisSelecionados() {
         const marcados = document.querySelectorAll("#listaAdicionais input:checked");
-        return Array.prototype.map.call(marcados, dadosLinha);
+        return Array.prototype.map.call(marcados, function (el) {
+            return ADICIONAIS[Number(el.value)];
+        });
     }
 
     function calcular() {
@@ -48,7 +109,7 @@
             if (b) unitario += b.preco;
             adicionaisSelecionados().forEach(function (a) { unitario += a.preco; });
         } else {
-            unitario = precoBase;
+            unitario = produto.preco;
         }
         document.getElementById("totalValor").textContent = formatarMoeda(unitario * qtd);
     }
@@ -58,22 +119,6 @@
         document.getElementById("qtdNum").textContent = String(qtd);
         calcular();
     }
-
-    // ---- Observação: contador + limite ----
-    const observacao = document.getElementById("observacao");
-    const contador = document.getElementById("contadorObs");
-    const limite = parseInt(observacao.getAttribute("maxlength"), 10) || 500;
-    observacao.addEventListener("input", function () {
-        if (observacao.value.length > limite) {
-            observacao.value = observacao.value.slice(0, limite);
-        }
-        contador.textContent = String(observacao.value.length);
-    });
-
-    // ---- Recalcula ao mudar qualquer opção ----
-    document.querySelectorAll(".linha input").forEach(function (input) {
-        input.addEventListener("change", calcular);
-    });
 
     function enviarPedido() {
         if (ehPizza) {
@@ -94,16 +139,16 @@
             const t = tamanhoSelecionado();
             const b = bordaSelecionada();
             const adicionais = adicionaisSelecionados();
-            linhas.push("*Item:* Pizza " + nome + " (Qtd: " + qtd + ")");
-            linhas.push("*Ingredientes:* " + descricao);
+            linhas.push("*Item:* Pizza " + produto.nome + " (Qtd: " + qtd + ")");
+            linhas.push("*Ingredientes:* " + produto.descricao);
             linhas.push("*Tamanho:* " + t.rotulo);
             linhas.push("*Borda:* " + b.rotulo + (b.preco ? " (+ " + formatarMoeda(b.preco) + ")" : ""));
             if (adicionais.length) {
                 linhas.push("*Adicionais:* " + adicionais.map(function (a) { return a.rotulo; }).join(", "));
             }
         } else {
-            linhas.push("*Item:* " + nome + " (Qtd: " + qtd + ")");
-            linhas.push("*Descrição:* " + descricao);
+            linhas.push("*Item:* " + produto.nome + " (Qtd: " + qtd + ")");
+            linhas.push("*Descrição:* " + produto.descricao);
         }
 
         const obs = observacao.value.trim();
@@ -112,7 +157,7 @@
         linhas.push("");
         linhas.push("*Total: " + document.getElementById("totalValor").textContent + "*");
 
-        const url = "https://wa.me/" + whatsapp + "?text=" + encodeURIComponent(linhas.join("\n"));
+        const url = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(linhas.join("\n"));
         window.open(url, "_blank", "noopener");
     }
 

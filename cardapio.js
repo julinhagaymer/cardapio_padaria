@@ -1,39 +1,56 @@
 "use strict";
 
-/* Comportamento do cardápio (o HTML é gerado pelo PHP):
-   - menu de categorias que acompanha a rolagem, com traço deslizante
-   - arrastar a barra de categorias com o mouse (inércia ao soltar)
-   - animação dos títulos ao entrar/sair da tela
-   - abrir a página do produto guardando a posição de rolagem */
-
 (function () {
     const barra = document.getElementById("categoriasBar");
+    const lista = document.getElementById("cardapio");
     const fixedTop = document.querySelector(".fixed-top");
 
-    const botoes = Array.prototype.slice.call(document.querySelectorAll(".cat-btn"));
-    const idsSecoes = botoes.map(function (b) { return b.getAttribute("data-secao"); });
-    const titulos = Array.prototype.slice.call(document.querySelectorAll(".categoria-titulo"));
-
-    if (!barra || botoes.length === 0) return;
-
+    const botoes = [];
+    const idsSecoes = [];
+    const titulos = [];
     let arrastou = false;
 
-    // Mesma medida usada para (a) categoria ativa, (b) posição do traço e
-    // (c) destino da rolagem ao clicar num botão — assim tudo bate certinho.
+    // Quanto do topo fica coberto pelo cabeçalho fixo. É a MESMA medida usada
+    // para (a) decidir qual categoria está ativa, (b) posicionar o traço e
+    // (c) para onde rolar ao clicar num botão — assim tudo bate certinho.
     const MARGEM_TOPO = 6;
     function deslocamento() {
         return fixedTop.offsetHeight + MARGEM_TOPO;
     }
 
-    // ---- Abrir produto guardando a posição atual ----
-    document.querySelectorAll(".item-card").forEach(function (card) {
-        card.addEventListener("click", function () {
-            try { sessionStorage.setItem("cardapioY", String(window.pageYOffset)); } catch (e) {}
-            location.href = "produto.php?id=" + encodeURIComponent(card.getAttribute("data-id"));
+    CATEGORIAS.forEach(function (categoria, indice) {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "cat-btn" + (indice === 0 ? " active" : "");
+        botao.textContent = "- " + categoria.nome;
+        botao.addEventListener("click", function () {
+            if (arrastou) { arrastou = false; return; }
+            irParaSecao(categoria.id, botao);
         });
+        barra.appendChild(botao);
+        botoes.push(botao);
+        idsSecoes.push(categoria.id);
+
+        const secao = document.createElement("section");
+        secao.id = categoria.id;
+        secao.className = "categoria-secao";
+
+        const titulo = document.createElement("div");
+        titulo.className = "categoria-titulo";
+        titulo.textContent = categoria.nome;
+        secao.appendChild(titulo);
+        titulos.push(titulo);
+
+        PRODUTOS
+            .filter(function (p) { return p.categoria === categoria.id; })
+            .forEach(function (produto) { secao.appendChild(montarCard(produto)); });
+
+        lista.appendChild(secao);
     });
 
-    // ---- Voltar à posição de antes (sem animação) ----
+    // Assim que o cardápio existe na tela, volta para a posição em que o
+    // usuário estava antes de abrir um produto — sem animação, para ele já
+    // aparecer na seção certa (e não ver a página rolando do topo).
     try {
         const yGuardado = sessionStorage.getItem("cardapioY");
         if (yGuardado !== null) {
@@ -46,27 +63,24 @@
         }
     } catch (e) {}
 
-    window.addEventListener("pageshow", function (e) {
-        if (e.persisted) {
-            try { sessionStorage.removeItem("cardapioY"); } catch (err) {}
-        }
-    });
-
-    // ---- Traço deslizante sob a categoria ativa ----
+    // Traço sob a categoria ativa: a posição acompanha a rolagem em tempo real,
+    // interpolando entre um botão e o próximo (sem depender de transição/atraso).
     const indicador = document.createElement("span");
     indicador.className = "cat-indicador";
     barra.appendChild(indicador);
 
-    // Onde estamos no menu: categoria i, com fração f (0 a 1) rumo à seguinte.
-    // O traço e a cor vermelha saem daqui, então nunca discordam.
+    // Uma única fonte de verdade para "onde estamos no menu": categoria i,
+    // com fração f (0 a 1) rumo à categoria seguinte. O traço e a cor vermelha
+    // saem daqui, então nunca discordam — subindo ou descendo.
     function posicaoNoMenu() {
         const base = deslocamento();
         const y = window.pageYOffset;
         const tops = idsSecoes.map(function (id) {
-            const el = document.getElementById(id);
-            return (el ? el.getBoundingClientRect().top : 0) + y - base;
+            return document.getElementById(id).getBoundingClientRect().top + y - base;
         });
 
+        // Chegou ao fim da página: a última seção pode ser curta demais para
+        // encostar no topo, então força a última categoria.
         const alturaTotal = Math.max(
             document.documentElement.scrollHeight,
             document.body.scrollHeight
@@ -104,8 +118,52 @@
         indicador.style.width = width + "px";
     }
 
-    // ---- Arrastar a barra com o mouse (só vira arraste após um limiar,
-    //      então um clique simples continua funcionando) ----
+    function montarCard(produto) {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.addEventListener("click", function () {
+            // guarda a posição para voltar exatamente aqui depois
+            try { sessionStorage.setItem("cardapioY", String(window.pageYOffset)); } catch (e) {}
+            location.href = "produto.html?id=" + encodeURIComponent(produto.id);
+        });
+
+        const info = document.createElement("div");
+        info.className = "item-info";
+
+        const titulo = document.createElement("div");
+        titulo.className = "item-titulo";
+        titulo.textContent = produto.nome;
+
+        const descricao = document.createElement("div");
+        descricao.className = "item-descricao";
+        descricao.textContent = produto.descricao;
+
+        const preco = document.createElement("div");
+        preco.className = "item-preco";
+        preco.textContent = precoResumo(produto);
+
+        info.appendChild(titulo);
+        info.appendChild(descricao);
+        info.appendChild(preco);
+        card.appendChild(info);
+
+        const url = imagemSegura(produto.imagem);
+        if (url) {
+            const img = document.createElement("img");
+            img.className = "item-imagem";
+            img.src = url;
+            img.alt = produto.nome;
+            img.loading = "lazy";
+            card.appendChild(img);
+        }
+
+        return card;
+    }
+
+    // Arrastar a barra de categorias com o mouse, com inércia ao soltar.
+    // Só vira "arraste" (e captura o ponteiro) depois de passar de um limiar;
+    // um clique simples nunca captura, então o botão continua clicável.
+    // (No touch o próprio navegador já dá o deslize com inércia.)
     (function ativarArrasto() {
         let pressionado = false;
         let arrastando = false;
@@ -174,7 +232,6 @@
         barra.addEventListener("pointercancel", soltar);
     })();
 
-    // ---- Menu que acompanha a rolagem ----
     let travaMenu = false;
     let travaMenuTimer;
 
@@ -213,14 +270,8 @@
         }, 700);
     }
 
-    botoes.forEach(function (botao) {
-        botao.addEventListener("click", function () {
-            if (arrastou) { arrastou = false; return; }
-            irParaSecao(botao.getAttribute("data-secao"), botao);
-        });
-    });
-
-    // ---- Animação dos títulos ao entrar/sair da tela ----
+    // Anima cada título toda vez que ele entra na tela — descendo OU subindo.
+    // Ao sair, volta ao estado escondido para animar de novo na próxima passagem.
     if ("IntersectionObserver" in window) {
         const observador = new IntersectionObserver(function (entradas) {
             entradas.forEach(function (entrada) {
@@ -234,7 +285,6 @@
         });
     }
 
-    // ---- Sincronização com a rolagem ----
     let agendado = false;
     function aoRolar() {
         if (agendado) return;
@@ -251,6 +301,14 @@
         atualizarSecaoAtiva();
         atualizarIndicador();
     }
+
+    // Se a página voltou do cache do navegador (bfcache), ele já restaurou a
+    // rolagem — só descartamos a marca para não interferir numa visita futura.
+    window.addEventListener("pageshow", function (e) {
+        if (e.persisted) {
+            try { sessionStorage.removeItem("cardapioY"); } catch (err) {}
+        }
+    });
 
     window.addEventListener("scroll", aoRolar, { passive: true });
     window.addEventListener("resize", recalcular);

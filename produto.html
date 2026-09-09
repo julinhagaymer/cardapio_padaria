@@ -1,26 +1,3 @@
-<?php
-declare(strict_types=1);
-require __DIR__ . '/catalogo.php';
-
-$produto = buscar_produto($_GET['id'] ?? '');
-$ehPizza = $produto && $produto['tipo'] === 'pizza';
-
-/** Renderiza as linhas de opção (tamanho / borda / adicionais). */
-function render_opcoes(array $itens, string $tipoInput, bool $somaAoTotal): void
-{
-    foreach ($itens as $item) {
-        $preco = (float) $item['preco'];
-        echo '<label class="linha">';
-        echo '<span class="linha-nome">' . h($item['rotulo']) . '</span>';
-        if ($preco > 0) {
-            $prefixo = $somaAoTotal ? '+ ' : '';
-            echo '<span class="linha-preco">' . h($prefixo . formatar_moeda($preco)) . '</span>';
-        }
-        echo '<input type="' . h($tipoInput) . '" name="' . h($tipoInput) . '" data-preco="' . h((string) $preco) . '">';
-        echo '</label>';
-    }
-}
-?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -193,60 +170,40 @@ function render_opcoes(array $itens, string $tipoInput, bool $somaAoTotal): void
 <body>
 
     <div class="topo">
-        <a class="voltar" href="index.php">‹ Voltar ao cardápio</a>
+        <a class="voltar" href="index.html">‹ Voltar ao cardápio</a>
     </div>
 
-<?php if (!$produto): ?>
     <div class="container">
-        <h1 class="produto-nome">Produto não encontrado</h1>
-        <p class="produto-desc">Volte ao cardápio e escolha um item.</p>
-    </div>
-<?php else: ?>
-<?php
-    $img = imagem_segura($produto['imagem'] ?? '');
-    $classeContainer = $ehPizza ? 'container' : 'container simples';
-?>
-    <div class="<?= $classeContainer ?>"
-         data-tipo="<?= h($produto['tipo']) ?>"
-         data-nome="<?= h($produto['nome']) ?>"
-         data-descricao="<?= h($produto['descricao']) ?>"
-         data-preco="<?= h((string) ($produto['preco'] ?? 0)) ?>"
-         data-whatsapp="<?= h(WHATSAPP) ?>">
+        <div class="produto-foto" id="produtoFoto"></div>
+        <h1 class="produto-nome" id="produtoNome"></h1>
+        <p class="produto-desc" id="produtoDesc"></p>
+        <div class="produto-preco" id="produtoPreco" hidden></div>
 
-        <div class="produto-foto"<?= $img !== '' ? ' style="background-image:url(' . h($img) . ')"' : '' ?>></div>
-        <h1 class="produto-nome"><?= h($ehPizza ? 'Pizza ' . $produto['nome'] : $produto['nome']) ?></h1>
-        <p class="produto-desc"><?= h($produto['descricao']) ?></p>
-<?php if (!$ehPizza): ?>
-        <div class="produto-preco"><?= h(formatar_moeda($produto['preco'])) ?></div>
-<?php endif; ?>
-
-<?php if ($ehPizza): ?>
         <div class="secao" id="secaoTamanho">
             <div class="secao-titulo">Escolha um tamanho</div>
             <div class="secao-tag obrigatorio">Obrigatório</div>
-            <div class="bloco" id="listaTamanhos"><?php render_opcoes($TAMANHOS, 'tamanho', false); ?></div>
+            <div class="bloco" id="listaTamanhos"></div>
             <div class="erro" id="erroTamanho">Selecione um tamanho.</div>
         </div>
 
         <div class="secao" id="secaoBorda">
             <div class="secao-titulo">Borda</div>
             <div class="secao-tag obrigatorio">Obrigatório</div>
-            <div class="bloco" id="listaBordas"><?php render_opcoes($BORDAS, 'borda', true); ?></div>
+            <div class="bloco" id="listaBordas"></div>
             <div class="erro" id="erroBorda">Selecione uma opção de borda.</div>
         </div>
 
         <div class="secao" id="secaoAdicionais">
             <div class="secao-titulo">Adicionais</div>
             <div class="secao-tag opcional">Opcional</div>
-            <div class="bloco" id="listaAdicionais"><?php render_opcoes($ADICIONAIS, 'adicional', true); ?></div>
+            <div class="bloco" id="listaAdicionais"></div>
         </div>
-<?php endif; ?>
 
         <div class="secao">
             <div class="secao-titulo">Alguma observação?</div>
             <div class="secao-tag opcional">Opcional</div>
-            <textarea id="observacao" maxlength="<?= (int) LIMITE_OBSERVACAO ?>"></textarea>
-            <div class="contador"><span id="contadorObs">0</span>/<?= (int) LIMITE_OBSERVACAO ?></div>
+            <textarea id="observacao" maxlength="500"></textarea>
+            <div class="contador"><span id="contadorObs">0</span>/500</div>
         </div>
     </div>
 
@@ -261,8 +218,8 @@ function render_opcoes(array $itens, string $tipoInput, bool $somaAoTotal): void
             <button class="btn-pedir" type="button" id="btnPedir">Pedir pelo WhatsApp</button>
         </div>
     </div>
-<?php endif; ?>
 
+    <script src="catalogo.js"></script>
     <script src="produto.js"></script>
 </body>
 </html>
