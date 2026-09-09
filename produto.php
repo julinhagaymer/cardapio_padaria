@@ -1,0 +1,268 @@
+<?php
+declare(strict_types=1);
+require __DIR__ . '/catalogo.php';
+
+$produto = buscar_produto($_GET['id'] ?? '');
+$ehPizza = $produto && $produto['tipo'] === 'pizza';
+
+/** Renderiza as linhas de opção (tamanho / borda / adicionais). */
+function render_opcoes(array $itens, string $tipoInput, bool $somaAoTotal): void
+{
+    foreach ($itens as $item) {
+        $preco = (float) $item['preco'];
+        echo '<label class="linha">';
+        echo '<span class="linha-nome">' . h($item['rotulo']) . '</span>';
+        if ($preco > 0) {
+            $prefixo = $somaAoTotal ? '+ ' : '';
+            echo '<span class="linha-preco">' . h($prefixo . formatar_moeda($preco)) . '</span>';
+        }
+        echo '<input type="' . h($tipoInput) . '" name="' . h($tipoInput) . '" data-preco="' . h((string) $preco) . '">';
+        echo '</label>';
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <title>Produto - Com Carinho</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f7f7f7; color: #1a1a1a; padding-bottom: 96px; }
+
+        .topo {
+            position: sticky;
+            top: 0;
+            background-color: #ffffff;
+            border-bottom: 1px solid #eee;
+            padding: 14px 16px;
+            z-index: 10;
+        }
+        .voltar { color: #8c2a2a; text-decoration: none; font-size: 14px; }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 20px 16px; }
+
+        .container.simples {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            min-height: calc(100vh - 140px);
+        }
+        .container.simples .produto-foto {
+            flex: 1 1 auto;
+            height: auto;
+            min-height: 240px;
+        }
+        .container.simples .secao { text-align: left; }
+
+        .produto-foto {
+            width: 100%;
+            height: 200px;
+            border-radius: 14px;
+            background-color: #ececec;
+            background-size: cover;
+            background-position: center;
+            margin-bottom: 16px;
+        }
+
+        .produto-nome { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+        .produto-desc { font-size: 14px; color: #666; line-height: 1.5; }
+        .produto-preco { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-top: 12px; }
+
+        .secao { margin-top: 28px; }
+        .secao-titulo { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+        .secao-tag { font-size: 12px; margin-bottom: 12px; }
+        .secao-tag.obrigatorio { color: #8c2a2a; }
+        .secao-tag.opcional { color: #999; }
+
+        .bloco {
+            background-color: #ffffff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 2px 16px;
+        }
+
+        .linha {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .linha:last-child { border-bottom: none; }
+        .linha-nome { font-size: 14px; }
+        .linha-preco { font-size: 13px; color: #777; margin-left: auto; }
+
+        input[type="radio"], input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="radio"] { border-radius: 50%; margin-left: auto; }
+        .linha-preco + input[type="radio"] { margin-left: 0; }
+        input[type="checkbox"] { border-radius: 6px; }
+
+        input[type="radio"]:checked { border-color: #8c2a2a; }
+        input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            background-color: #8c2a2a;
+        }
+        input[type="checkbox"]:checked { border-color: #8c2a2a; background-color: #8c2a2a; }
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        textarea {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 88px;
+        }
+        .contador { text-align: right; font-size: 12px; color: #999; margin-top: 4px; }
+
+        .erro { color: #c0392b; font-size: 12px; margin-top: 8px; display: none; }
+        .erro.ativo { display: block; }
+
+        .rodape {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #ffffff;
+            border-top: 1px solid #eee;
+        }
+        .rodape-inner {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .qtd { display: flex; align-items: center; gap: 14px; }
+        .qtd button {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 50%;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+        }
+        .qtd span { font-size: 15px; min-width: 14px; text-align: center; }
+        .total { font-size: 14px; color: #555; }
+        .total span { color: #1a1a1a; }
+        .btn-pedir {
+            margin-left: auto;
+            background-color: #25d366;
+            color: #fff;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topo">
+        <a class="voltar" href="index.php">‹ Voltar ao cardápio</a>
+    </div>
+
+<?php if (!$produto): ?>
+    <div class="container">
+        <h1 class="produto-nome">Produto não encontrado</h1>
+        <p class="produto-desc">Volte ao cardápio e escolha um item.</p>
+    </div>
+<?php else: ?>
+<?php
+    $img = imagem_segura($produto['imagem'] ?? '');
+    $classeContainer = $ehPizza ? 'container' : 'container simples';
+?>
+    <div class="<?= $classeContainer ?>"
+         data-tipo="<?= h($produto['tipo']) ?>"
+         data-nome="<?= h($produto['nome']) ?>"
+         data-descricao="<?= h($produto['descricao']) ?>"
+         data-preco="<?= h((string) ($produto['preco'] ?? 0)) ?>"
+         data-whatsapp="<?= h(WHATSAPP) ?>">
+
+        <div class="produto-foto"<?= $img !== '' ? ' style="background-image:url(' . h($img) . ')"' : '' ?>></div>
+        <h1 class="produto-nome"><?= h($ehPizza ? 'Pizza ' . $produto['nome'] : $produto['nome']) ?></h1>
+        <p class="produto-desc"><?= h($produto['descricao']) ?></p>
+<?php if (!$ehPizza): ?>
+        <div class="produto-preco"><?= h(formatar_moeda($produto['preco'])) ?></div>
+<?php endif; ?>
+
+<?php if ($ehPizza): ?>
+        <div class="secao" id="secaoTamanho">
+            <div class="secao-titulo">Escolha um tamanho</div>
+            <div class="secao-tag obrigatorio">Obrigatório</div>
+            <div class="bloco" id="listaTamanhos"><?php render_opcoes($TAMANHOS, 'tamanho', false); ?></div>
+            <div class="erro" id="erroTamanho">Selecione um tamanho.</div>
+        </div>
+
+        <div class="secao" id="secaoBorda">
+            <div class="secao-titulo">Borda</div>
+            <div class="secao-tag obrigatorio">Obrigatório</div>
+            <div class="bloco" id="listaBordas"><?php render_opcoes($BORDAS, 'borda', true); ?></div>
+            <div class="erro" id="erroBorda">Selecione uma opção de borda.</div>
+        </div>
+
+        <div class="secao" id="secaoAdicionais">
+            <div class="secao-titulo">Adicionais</div>
+            <div class="secao-tag opcional">Opcional</div>
+            <div class="bloco" id="listaAdicionais"><?php render_opcoes($ADICIONAIS, 'adicional', true); ?></div>
+        </div>
+<?php endif; ?>
+
+        <div class="secao">
+            <div class="secao-titulo">Alguma observação?</div>
+            <div class="secao-tag opcional">Opcional</div>
+            <textarea id="observacao" maxlength="<?= (int) LIMITE_OBSERVACAO ?>"></textarea>
+            <div class="contador"><span id="contadorObs">0</span>/<?= (int) LIMITE_OBSERVACAO ?></div>
+        </div>
+    </div>
+
+    <div class="rodape">
+        <div class="rodape-inner">
+            <div class="qtd">
+                <button type="button" id="btnMenos">−</button>
+                <span id="qtdNum">1</span>
+                <button type="button" id="btnMais">+</button>
+            </div>
+            <div class="total">Total <span id="totalValor">R$ 0,00</span></div>
+            <button class="btn-pedir" type="button" id="btnPedir">Pedir pelo WhatsApp</button>
+        </div>
+    </div>
+<?php endif; ?>
+
+    <script src="produto.js"></script>
+</body>
+</html>
