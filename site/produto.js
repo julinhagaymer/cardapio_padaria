@@ -35,17 +35,30 @@
     const secaoBorda = document.getElementById("secaoBorda");
     const secaoAdicionais = document.getElementById("secaoAdicionais");
 
+    // Adicionais que este produto mostra (pizza ou não). Sem lista definida,
+    // uma pizza mostra todos — comportamento antigo.
+    function adicionaisDoProduto(prod) {
+        const ids = Array.isArray(prod.adicionais) ? prod.adicionais : null;
+        if (!ids) return prod.tipo === "pizza" ? ADICIONAIS.slice() : [];
+        return ADICIONAIS.filter(function (a) { return ids.indexOf(a.id) !== -1; });
+    }
+    const listaAdicionais = adicionaisDoProduto(produto);
+
     if (ehPizza) {
         preencherOpcoes(document.getElementById("listaTamanhos"), TAMANHOS, "radio", "tamanho");
         preencherOpcoes(document.getElementById("listaBordas"), BORDAS, "radio", "borda");
-        preencherOpcoes(document.getElementById("listaAdicionais"), ADICIONAIS, "checkbox", "adicional");
     } else {
         secaoTamanho.remove();
         secaoBorda.remove();
-        secaoAdicionais.remove();
         container.classList.add("simples");
         elPreco.textContent = formatarMoeda(produto.preco);
         elPreco.hidden = false;
+    }
+
+    if (listaAdicionais.length) {
+        preencherOpcoes(document.getElementById("listaAdicionais"), listaAdicionais, "checkbox", "adicional");
+    } else {
+        secaoAdicionais.remove();
     }
 
     function preencherOpcoes(alvo, itens, tipoInput, grupo) {
@@ -96,7 +109,7 @@
     function adicionaisSelecionados() {
         const marcados = document.querySelectorAll("#listaAdicionais input:checked");
         return Array.prototype.map.call(marcados, function (el) {
-            return ADICIONAIS[Number(el.value)];
+            return listaAdicionais[Number(el.value)];
         });
     }
 
@@ -107,10 +120,10 @@
             const b = bordaSelecionada();
             if (t) unitario += t.preco;
             if (b) unitario += b.preco;
-            adicionaisSelecionados().forEach(function (a) { unitario += a.preco; });
         } else {
             unitario = produto.preco;
         }
+        adicionaisSelecionados().forEach(function (a) { unitario += a.preco; });
         document.getElementById("totalValor").textContent = formatarMoeda(unitario * qtd);
     }
 
@@ -149,6 +162,10 @@
         } else {
             linhas.push("*Item:* " + produto.nome + " (Qtd: " + qtd + ")");
             linhas.push("*Descrição:* " + produto.descricao);
+            const adc = adicionaisSelecionados();
+            if (adc.length) {
+                linhas.push("*Adicionais:* " + adc.map(function (a) { return a.rotulo; }).join(", "));
+            }
         }
 
         const obs = observacao.value.trim();

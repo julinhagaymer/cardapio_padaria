@@ -1,6 +1,11 @@
 "use strict";
 
 (function () {
+    // Nós mesmos devolvemos a rolagem à posição certa (ver mais abaixo).
+    // Sem isto, o navegador tenta adivinhar durante o carregamento e joga
+    // a página para o rodapé antes de o conteúdo aparecer.
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
     const barra = document.getElementById("categoriasBar");
     const lista = document.getElementById("cardapio");
     const fixedTop = document.querySelector(".fixed-top");
@@ -9,6 +14,7 @@
     const idsSecoes = [];
     const titulos = [];
     let arrastou = false;
+    let semAnimacao = false; // no "assentar" inicial, tudo é posicionado sem transição
 
     // Quanto do topo fica coberto pelo cabeçalho fixo. É a MESMA medida usada
     // para (a) decidir qual categoria está ativa, (b) posicionar o traço e
@@ -49,16 +55,19 @@
     });
 
     // Assim que o cardápio existe na tela, volta para a posição em que o
-    // usuário estava antes de abrir um produto — sem animação, para ele já
-    // aparecer na seção certa (e não ver a página rolando do topo).
+    // usuário estava antes de abrir um produto. Guardamos o valor aqui e,
+    // no fim, "assentamos" o cabeçalho direto na seção certa — sem varrer
+    // as categorias uma a uma.
+    let yRestaurar = null;
     try {
         const yGuardado = sessionStorage.getItem("cardapioY");
         if (yGuardado !== null) {
             sessionStorage.removeItem("cardapioY");
+            yRestaurar = parseInt(yGuardado, 10) || 0;
             const raiz = document.documentElement;
             const anterior = raiz.style.scrollBehavior;
             raiz.style.scrollBehavior = "auto";
-            window.scrollTo(0, parseInt(yGuardado, 10) || 0);
+            window.scrollTo(0, yRestaurar);
             raiz.style.scrollBehavior = anterior;
         }
     } catch (e) {}
@@ -237,7 +246,7 @@
 
     function centralizarBotao(botao) {
         const destino = botao.offsetLeft - (barra.clientWidth / 2) + (botao.clientWidth / 2);
-        barra.scrollTo({ left: destino, behavior: "smooth" });
+        barra.scrollTo({ left: destino, behavior: semAnimacao ? "auto" : "smooth" });
     }
 
     function ativarBotao(botao) {
@@ -313,5 +322,17 @@
     window.addEventListener("scroll", aoRolar, { passive: true });
     window.addEventListener("resize", recalcular);
     window.addEventListener("load", recalcular);
-    recalcular();
+
+    if (yRestaurar !== null) {
+        // Voltou de um produto: o cabeçalho já nasce na seção certa, sem
+        // rolagem animada da barra nem o traço deslizando desde a primeira.
+        semAnimacao = true;
+        indicador.classList.add("sem-transicao");
+        recalcular();
+        void indicador.offsetWidth; // aplica a posição agora
+        indicador.classList.remove("sem-transicao");
+        semAnimacao = false;
+    } else {
+        recalcular();
+    }
 })();

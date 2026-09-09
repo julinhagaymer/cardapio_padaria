@@ -5,12 +5,61 @@ declare(strict_types=1);
    Backend do cardápio. Guarda tudo em catalogo.dados.json (criado no
    primeiro "Salvar"). Antes disso, usa os valores de fábrica abaixo.
 
-   >>> TROQUE a senha de administração aqui: <<<
+   >>> TROQUE a senha de acesso ao painel aqui (fica só no servidor): <<<
    ===================================================================== */
-const SENHA_ADMIN = 'padaria';
+const ACESSO_ADMIN = 'cc4125';
 
 const ARQ_DADOS   = __DIR__ . '/catalogo.dados.json';
 const LIMITE_BYTES = 6 * 1024 * 1024; // trava para fotos pesadas demais
+
+/* ---- Sessão do painel ---- */
+function iniciar_sessao(): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        return;
+    }
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => !empty($_SERVER['HTTPS']),
+    ]);
+    session_start();
+}
+
+function sessao_valida(): bool
+{
+    return !empty($_SESSION['painel_ok']);
+}
+
+function responder_entrar(): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    $body = json_decode((string) file_get_contents('php://input'), true);
+    $senha = is_array($body) ? (string) ($body['senha'] ?? '') : '';
+    if (!hash_equals(ACESSO_ADMIN, $senha)) {
+        usleep(500000);
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'erro' => 'Senha incorreta.']);
+        return;
+    }
+    session_regenerate_id(true);
+    $_SESSION['painel_ok'] = true;
+    echo json_encode(['ok' => true]);
+}
+
+function responder_sair(): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], (bool) $p['secure'], (bool) $p['httponly']);
+    }
+    session_destroy();
+    echo json_encode(['ok' => true]);
+}
 
 function catalogo_padrao(): array
 {
@@ -175,6 +224,34 @@ function normalizar_catalogo(array $e): array
         $idsCat[] = 'geral';
     }
 
+    /* Opções primeiro: cada produto referencia adicionais pelo id deles. */
+    foreach (['tamanhos', 'bordas'] as $chave) {
+        foreach (is_array($e[$chave] ?? null) ? $e[$chave] : [] as $o) {
+            if (!is_array($o)) {
+                continue;
+            }
+            $rot = trim((string) ($o['rotulo'] ?? ''));
+            $out[$chave][] = ['rotulo' => $rot !== '' ? $rot : 'Item', 'preco' => num_pos($o['preco'] ?? 0)];
+        }
+    }
+
+    $idsAdd = [];
+    foreach (is_array($e['adicionais'] ?? null) ? $e['adicionais'] : [] as $o) {
+        if (!is_array($o)) {
+            continue;
+        }
+        $rot = trim((string) ($o['rotulo'] ?? ''));
+        if ($rot === '') {
+            $rot = 'Adicional';
+        }
+        $aid = (string) ($o['id'] ?? '');
+        if ($aid === '' || in_array($aid, $idsAdd, true)) {
+            $aid = id_unico(slugificar($rot), $idsAdd);
+        }
+        $idsAdd[] = $aid;
+        $out['adicionais'][] = ['id' => $aid, 'rotulo' => $rot, 'preco' => num_pos($o['preco'] ?? 0)];
+    }
+
     $idsProd = [];
     foreach (is_array($e['produtos'] ?? null) ? $e['produtos'] : [] as $p) {
         if (!is_array($p)) {
@@ -204,33 +281,36 @@ function normalizar_catalogo(array $e): array
         if ($tipo !== 'pizza') {
             $item['preco'] = num_pos($p['preco'] ?? 0);
         }
-        $out['produtos'][] = $item;
-    }
 
-    foreach (['tamanhos', 'bordas', 'adicionais'] as $chave) {
-        foreach (is_array($e[$chave] ?? null) ? $e[$chave] : [] as $o) {
-            if (!is_array($o)) {
-                continue;
+        if (array_key_exists('adicionais', $p) && is_array($p['adicionais'])) {
+            $sel = [];
+            foreach ($p['adicionais'] as $aid) {
+                $aid = (string) $aid;
+                if (in_array($aid, $idsAdd, true) && !in_array($aid, $sel, true)) {
+                    $sel[] = $aid;
+                }
             }
-            $rot = trim((string) ($o['rotulo'] ?? ''));
-            $out[$chave][] = ['rotulo' => $rot !== '' ? $rot : 'Item', 'preco' => num_pos($o['preco'] ?? 0)];
+            $item['adicionais'] = $sel;
+        } else {
+            /* Compatibilidade: pizza sem lista definida mostra todos os adicionais. */
+            $item['adicionais'] = $tipo === 'pizza' ? $idsAdd : [];
         }
+
+        $out['produtos'][] = $item;
     }
 
     return $out;
 }
 
-/* Trata o POST do admin: valida senha, normaliza e grava. */
+/* Trata o POST do admin: normaliza e grava. (O acesso já foi checado no api.php.) */
 function responder_post(): void
 {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
 
-    $senha = $_SERVER['HTTP_X_SENHA'] ?? '';
-    if (!is_string($senha) || !hash_equals(SENHA_ADMIN, $senha)) {
-        usleep(400000);
-        http_response_code(401);
-        echo json_encode(['ok' => false, 'erro' => 'Senha incorreta.']);
+    if (!sessao_valida()) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'erro' => 'Sessão expirada. Entre novamente.']);
         return;
     }
 

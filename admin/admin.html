@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Painel — Com Carinho</title>
+    <style>
+        :root {
+            --sidebar: #2a1a12;
+            --bg: #efe8dd;
+            --card: #fbf8f3;
+            --card2: #f4ede2;
+            --linha: #e7dcca;
+            --marrom: #7d5648;
+            --marrom-forte: #5b3a2e;
+            --escuro: #2a1a12;
+            --txt: #3a2a20;
+            --txt-fraco: #9c8b7c;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--txt); }
+
+        /* ---------- Login ---------- */
+        #telaLogin {
+            display: none;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        body.bloqueado #telaLogin { display: flex; }
+        body.bloqueado .layout { display: none; }
+
+        .caixa-login {
+            width: 100%;
+            max-width: 340px;
+            background: var(--card);
+            border: 1px solid var(--linha);
+            border-radius: 18px;
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .caixa-login .marca-nome { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 26px; color: var(--marrom-forte); }
+        .caixa-login p { font-size: 13px; color: var(--txt-fraco); margin: 6px 0 18px; }
+        .caixa-login input {
+            width: 100%; border: 1px solid #d8ccba; border-radius: 10px;
+            padding: 11px 13px; font-size: 14px; margin-bottom: 12px; background: #fff;
+        }
+        .caixa-login button { width: 100%; justify-content: center; }
+        .erro-login { color: #b5322b; font-size: 12px; margin-top: 10px; }
+
+        /* ---------- Layout ---------- */
+        .layout { display: flex; min-height: 100vh; }
+
+        .barra-lateral {
+            width: 248px;
+            flex: none;
+            background: var(--sidebar);
+            color: #e4d7c8;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 16px;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            height: 100vh;
+        }
+        .marca { text-align: center; padding: 0 8px 10px; }
+        .marca-logo { font-size: 30px; }
+        .marca-nome { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 27px; color: #f2e6d7; margin-top: 2px; }
+        .marca-slogan { font-size: 11px; color: #b39c88; letter-spacing: .3px; margin-top: 2px; }
+
+        /* O menu ocupa o centro da barra: marca em cima, "Sair" embaixo. */
+        .nav { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .nav a {
+            display: flex; align-items: center; gap: 14px;
+            padding: 15px 16px; border-radius: 12px;
+            color: #d3c1af; font-size: 14px; text-decoration: none; cursor: pointer;
+            white-space: nowrap; letter-spacing: .2px;
+        }
+        .nav a:hover { background: rgba(255,255,255,.06); }
+        .nav a.ativo { background: rgba(255,255,255,.11); color: #fff; }
+        .nav a .ic {
+            width: 24px; flex: none;
+            text-align: center; font-size: 16px; line-height: 1;
+        }
+
+        .btn-sair {
+            display: flex; align-items: center; gap: 10px; justify-content: center;
+            background: none; border: 1px solid rgba(255,255,255,.16);
+            color: #d3c1af; border-radius: 12px; padding: 11px 14px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .btn-sair:hover { background: rgba(255,255,255,.06); }
+
+        /* ---------- Área principal ---------- */
+        .principal { flex: 1; min-width: 0; padding: 26px 30px 70px; }
+        .principal-conteudo { max-width: 1180px; margin: 0 auto; }
+
+        .cabecalho {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .cabecalho h1 { font-size: 26px; font-weight: 800; color: var(--txt); }
+        .cabecalho p { font-size: 14px; color: var(--txt-fraco); margin-top: 4px; }
+        .btn-vercardapio {
+            background: var(--escuro); color: #f3e9dd; text-decoration: none;
+            padding: 11px 22px; border-radius: 11px;
+            font-size: 13px; font-weight: 700; letter-spacing: .3px;
+            align-self: flex-start; white-space: nowrap;
+        }
+        .btn-vercardapio:hover { background: #3a271c; }
+
+        .faixa-salvar {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .estado { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+        .estado.ok { background: #e6f2e9; color: #2e7d43; }
+        .estado.pendente { background: #fdeede; color: #b5691a; }
+
+        .erro-carregar {
+            background: #fdecea; border: 1px solid #f0c4c0; color: #8a2a22;
+            border-radius: 14px; padding: 14px 16px; font-size: 13px; line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        /* ---------- Cartões de número ---------- */
+        .cards-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+        .card-stat {
+            background: var(--card); border: 1px solid var(--linha); border-radius: 18px;
+            padding: 20px; display: flex; align-items: center; gap: 16px;
+        }
+        .badge {
+            width: 50px; height: 50px; border-radius: 50%; flex: none;
+            background: var(--marrom); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 21px;
+        }
+        .card-stat .rot { font-size: 13px; color: var(--txt-fraco); }
+        .card-stat .num { font-size: 26px; font-weight: 800; color: var(--txt); }
+
+        /* ---------- Painéis ---------- */
+        /* Cada painel ocupa a linha inteira. Dentro de Adicionais, duas colunas no desktop. */
+        .painel {
+            background: var(--card); border: 1px solid var(--linha); border-radius: 18px;
+            padding: 18px; margin-top: 16px;
+        }
+        .painel-cab { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .painel-cab h2 { font-size: 15px; color: var(--marrom-forte); display: flex; align-items: center; gap: 8px; }
+        .painel .sub { font-size: 12px; color: var(--txt-fraco); margin: 4px 0 12px; }
+        .painel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #7c6b5c; margin: 16px 0 8px; }
+        #painelProdutos h3:first-of-type { margin-top: 6px; }
+
+        /* Adicionais / tamanhos / bordas: uma coluna centralizada, cada grupo num cartão. */
+        .grupos-opcoes { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+        .grupo-opcao {
+            background: var(--card2); border: 1px solid var(--linha);
+            border-radius: 14px; padding: 14px 16px;
+        }
+        .grupo-opcao h3 { margin: 0 0 8px; }
+        .grupo-opcao .sub { margin: 0 0 10px; }
+        .grupo-opcao > button { margin-top: 12px; }
+
+        /* em "Editar ordem", esconde busca / adicionar / rótulos de seção */
+        .cab-botoes { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        #painelProdutos.ordenando .busca,
+        #painelProdutos.ordenando .add-produto,
+        #painelProdutos.ordenando > h3,
+        #painelProdutos.ordenando > .sub,
+        #painelSecoes.ordenando #btnAddSecao,
+        #painelSecoes.ordenando > .sub,
+        #painelAdicionais.ordenando .sub,
+        #painelAdicionais.ordenando #btnAddAdicional,
+        #painelAdicionais.ordenando #btnAddTamanho,
+        #painelAdicionais.ordenando #btnAddBorda { display: none; }
+        #btnEditarOrdem.ativo, #btnOrdemSecoes.ativo, #btnOrdemAdicionais.ativo {
+            background: var(--escuro); border-color: var(--escuro); color: #f3e9dd;
+        }
+
+        /* item somente-leitura (seção / adicional) com botão Editar */
+        .item-linha {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 2px; border-bottom: 1px solid var(--linha);
+        }
+        .item-linha:last-child { border-bottom: none; }
+        .item-rotulo { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; }
+        .item-detalhe { font-size: 12px; font-weight: 700; color: var(--marrom-forte); }
+        .item-edit {
+            border: 1px solid var(--linha); border-radius: 10px;
+            padding: 12px; margin: 6px 0 8px; background: #fff;
+        }
+        .item-edit-campos { display: flex; flex-direction: column; gap: 10px; }
+        .item-edit-acoes { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
+
+        .busca {
+            width: 100%; border: 1px solid #d8ccba; background: #fff;
+            border-radius: 10px; padding: 9px 12px; font-size: 13px; margin: 4px 0 12px;
+        }
+        .add-produto { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .add-produto select { flex: 1; min-width: 0; }
+        .add-produto button { white-space: nowrap; }
+
+        /* preço com R$ na frente */
+        .campo-preco {
+            display: flex; align-items: stretch; background: #fff;
+            border: 1px solid #d8ccba; border-radius: 9px; overflow: hidden;
+        }
+        .campo-preco .prefixo-rs {
+            display: flex; align-items: center; padding: 0 10px;
+            background: #f2ebe0; color: #7c6b5c; font-size: 12px; font-weight: 700;
+        }
+        .campo-preco input { border: none; border-radius: 0; flex: 1; min-width: 0; width: auto; }
+        .campo-preco input:focus { outline: none; }
+
+        /* modo "Editar ordem" */
+        .ordem-linha {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; border-bottom: 1px solid var(--linha);
+        }
+        .ordem-linha:last-child { border-bottom: none; }
+        .ordem-nome { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; }
+        .ordem-linha button[disabled] { opacity: .4; cursor: default; }
+
+        /* listas simples (seções / adicionais / tamanhos / bordas) */
+        .linha-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 0; border-bottom: 1px solid var(--linha);
+        }
+        .linha-item:last-child { border-bottom: none; }
+        .linha-item input[type="text"], .linha-item input[type="number"] { flex: 1; min-width: 0; }
+        .linha-item .preco-inp { flex: 0 0 118px; }
+        .linha-item .preco-inp input { min-width: 0; }
+
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%; border: 1px solid #d8ccba; border-radius: 9px;
+            padding: 8px 10px; font-size: 13px; background: #fff; color: var(--txt);
+        }
+        textarea { resize: vertical; min-height: 52px; line-height: 1.4; }
+        label.campo { display: block; font-size: 12px; font-weight: 700; color: #6f5d4e; }
+        label.campo > input { margin-top: 6px; font-weight: 400; }
+
+        /* botões */
+        .btn {
+            border: 1px solid #d9cdbb; background: #fff; color: var(--txt);
+            padding: 9px 14px; border-radius: 11px; font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6efe4; }
+        .btn-primario { background: var(--escuro); border-color: var(--escuro); color: #f3e9dd; }
+        .btn-primario:hover { background: #3a271c; }
+        .btn-perigo { color: #b5322b; border-color: #e7c3c0; }
+        .btn-mini { padding: 6px 10px; font-size: 12px; border-radius: 9px; }
+        .btn-icone {
+            border: 1px solid #d9cdbb; background: #fff; width: 30px; height: 30px;
+            border-radius: 8px; cursor: pointer; font-size: 13px; color: #6f5d4e; flex: none;
+        }
+        .btn-icone:hover { background: #f2ebdf; }
+
+        /* produtos */
+        .grupo-cat { margin-top: 14px; }
+        .grupo-cat:first-child { margin-top: 4px; }
+        .grupo-cat > h3 { margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #ece0cf; }
+
+        /* lista de produtos: 2 por fileira no desktop */
+        .grid-produtos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .card-produto {
+            border: 1px solid var(--linha); border-radius: 12px; padding: 10px;
+            background: #fdfbf7; min-width: 0;
+        }
+        .prod-compacto { display: flex; align-items: center; gap: 10px; }
+        .prod-mini {
+            width: 44px; height: 44px; border-radius: 8px; flex: none;
+            background: #ece2d3 center/cover no-repeat;
+        }
+        .prod-info { flex: 1; min-width: 0; }
+        .prod-nome {
+            font-size: 13px; font-weight: 700;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .prod-preco { font-size: 12px; font-weight: 700; color: var(--marrom-forte); }
+
+        .campo-rot-txt {
+            font-size: 10px; font-weight: 700; letter-spacing: .4px;
+            text-transform: uppercase; color: #8a7869; margin-bottom: 4px;
+        }
+
+        /* editor de produto dentro do modal */
+        .editor-produto { display: flex; flex-direction: column; gap: 12px; }
+        .editor-produto .modal-corpo-campo { margin-bottom: 0; }
+        .editor-foto {
+            width: 100%; height: 150px; border-radius: 12px;
+            background: #ece2d3 center/cover no-repeat;
+            border: 1px dashed #cdbfae;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: #a08c7a;
+        }
+        .editor-produto .foto-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .bloco-foto { display: flex; flex-direction: column; gap: 8px; }
+        .bloco-foto .foto-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+        .bloco-foto .modal-corpo-campo { margin-bottom: 0; }
+
+        /* seleção de adicionais por produto */
+        .check-adicionais { display: flex; flex-direction: column; gap: 8px; }
+        .check-linha {
+            display: flex; align-items: center; gap: 9px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+        }
+        .check-linha input { flex: none; width: 16px; height: 16px; margin: 0; }
+
+        /* cartões de atalho (rodapé) */
+        .faixa-salvar-fim { margin-top: 22px; display: flex; justify-content: flex-end; }
+        .faixa-salvar-fim button { padding: 12px 22px; font-size: 14px; }
+        .cards-atalho { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+        .card-atalho {
+            background: var(--card); border: 1px solid var(--linha); border-radius: 18px;
+            padding: 18px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .card-atalho .t { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .card-atalho .s { font-size: 12px; color: var(--txt-fraco); flex: 1; }
+        .card-atalho button { justify-content: center; }
+
+        .rodape-admin { text-align: center; font-size: 11px; color: #a89887; margin-top: 26px; }
+
+        /* ---------- Mobile: tudo em coluna, centralizado ---------- */
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; }
+            .barra-lateral {
+                width: 100%; height: auto; position: static; align-self: stretch;
+                padding: 16px;
+            }
+            .nav {
+                display: grid; grid-template-columns: 1fr 1fr;
+                gap: 8px; margin-top: 14px; overflow: visible;
+            }
+            .nav a {
+                justify-content: center; text-align: center;
+                padding: 12px 10px; font-size: 13px;
+                background: rgba(255,255,255,.05);
+                border: 1px solid rgba(255,255,255,.14);
+            }
+            .nav a.ativo { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.30); }
+            .nav a .ic { display: none; }
+            .btn-sair { margin-top: 12px; }
+            .principal { padding: 18px 16px 60px; }
+            .principal-conteudo { max-width: 560px; }
+            .cabecalho { flex-direction: column; align-items: stretch; }
+            .btn-vercardapio { align-self: flex-start; }
+            .cards-stats { grid-template-columns: 1fr; }
+            .grid-produtos { grid-template-columns: 1fr; }
+        }
+
+        /* ---------- Modal de "Adicionar" ---------- */
+        .modal {
+            position: fixed; inset: 0; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; background: rgba(30,18,12,.55);
+        }
+        .modal[hidden] { display: none; }
+        body.bloqueado .modal { display: none !important; }
+        .modal-caixa {
+            background: var(--card); border: 1px solid var(--linha); border-radius: 18px;
+            width: 100%; max-width: 520px; max-height: 90vh; overflow: auto;
+            padding: 20px; box-shadow: 0 24px 70px rgba(0,0,0,.4);
+        }
+        .modal-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .modal-cab h3 {
+            font-size: 16px; font-weight: 700; color: var(--marrom-forte);
+            margin: 0; text-transform: none; letter-spacing: 0;
+        }
+        .modal-corpo-campo { margin-bottom: 12px; }
+        .modal-corpo-campo:last-child { margin-bottom: 0; }
+        .modal-corpo-campo .campo-rot-txt { margin-bottom: 4px; }
+        .modal-rodape { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+
+        .modal-sucesso { text-align: center; padding: 6px 4px 2px; }
+        .modal-sucesso .ok-emoji { line-height: 0; }
+        .modal-sucesso .ok-emoji svg { display: block; margin: 0 auto; }
+
+        /* Janela de "salvo com sucesso": as opções ficam uma embaixo da outra,
+           em vez de lado a lado — aproveita a largura toda da caixa. */
+        .modal-caixa--sucesso .modal-rodape {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .modal-caixa--sucesso .modal-rodape button {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 16px;
+            font-size: 14px;
+        }
+
+        /* No desktop a caixa fica mais alta, com o ícone e o texto
+           centralizados no meio dela (não coladinhos no topo). */
+        @media (min-width: 901px) {
+            .modal-caixa--sucesso {
+                max-width: 420px;
+                min-height: 440px;
+                display: flex;
+                flex-direction: column;
+            }
+            .modal-caixa--sucesso #modalCorpo {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .modal-caixa--sucesso .modal-sucesso { padding: 0; }
+            .modal-caixa--sucesso .ok-emoji svg { width: 76px; height: 76px; }
+            .modal-caixa--sucesso .ok-texto { font-size: 18px; margin-top: 16px; }
+        }
+        .modal-sucesso .ok-texto {
+            font-size: 16px; font-weight: 700; color: var(--marrom-forte); margin-top: 12px;
+        }
+    </style>
+</head>
+<body class="bloqueado">
+
+    <div id="telaLogin">
+        <div class="caixa-login">
+            <div class="marca-nome">Com Carinho</div>
+            <p>Digite a senha de acesso ao painel.</p>
+            <input type="password" id="senhaLogin" autocomplete="current-password" placeholder="Senha">
+            <button id="btnEntrar" class="btn btn-primario">Entrar</button>
+            <div id="erroLogin" class="erro-login" hidden></div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <aside class="barra-lateral">
+            <div class="marca">
+                <div class="marca-logo">🥖</div>
+                <div class="marca-nome">Com Carinho</div>
+                <div class="marca-slogan">Sabor em cada detalhe</div>
+            </div>
+            <nav class="nav">
+                <a class="ativo" data-alvo="topoPainel"><span class="ic">🏠</span> Início</a>
+                <a data-alvo="painelProdutos"><span class="ic">📦</span> Produtos</a>
+                <a data-alvo="painelSecoes"><span class="ic">🗂️</span> Categorias / Seções</a>
+                <a data-alvo="painelAdicionais"><span class="ic">🏷️</span> Adicionais</a>
+            </nav>
+            <button id="btnSair" class="btn-sair"><span>↩</span> Sair</button>
+        </aside>
+
+        <main class="principal">
+            <div class="principal-conteudo" id="topoPainel">
+
+                <div class="cabecalho">
+                    <div>
+                        <h1>Olá, Administrador!</h1>
+                        <p>Aqui você gerencia todo o cardápio da sua padaria.</p>
+                    </div>
+                    <a class="btn-vercardapio" href="../site/" target="_blank" rel="noopener">Ver cardápio</a>
+                </div>
+
+                <div class="faixa-salvar">
+                    <span id="estado" class="estado ok">Carregando…</span>
+                    <button id="btnSalvar" class="btn btn-primario">Salvar e publicar</button>
+                </div>
+
+                <div id="erroCarregar" class="erro-carregar" hidden></div>
+
+                <div class="cards-stats">
+                    <div class="card-stat">
+                        <div class="badge">🥖</div>
+                        <div><div class="rot">Produtos cadastrados</div><div class="num" id="statProdutos">0</div></div>
+                    </div>
+                    <div class="card-stat">
+                        <div class="badge">🗂️</div>
+                        <div><div class="rot">Seções / Categorias</div><div class="num" id="statSecoes">0</div></div>
+                    </div>
+                    <div class="card-stat">
+                        <div class="badge">🏷️</div>
+                        <div><div class="rot">Adicionais cadastrados</div><div class="num" id="statAdicionais">0</div></div>
+                    </div>
+                </div>
+
+                <div class="painel" id="painelProdutos">
+                    <div class="painel-cab">
+                        <h2>📦 Produtos</h2>
+                        <div class="cab-botoes">
+                            <button id="btnEditarOrdem" class="btn btn-mini">&#8597; Editar ordem</button>
+                            <button id="btnAddProduto" class="btn btn-primario">+ Adicionar produto</button>
+                        </div>
+                    </div>
+                    <div class="sub">Clique em <b>Editar</b> num produto para abrir a tela de edição.</div>
+                    <input type="text" id="buscaProduto" class="busca" placeholder="Buscar produto pelo nome...">
+                    <div id="listaProdutos"></div>
+                </div>
+
+                <div class="painel" id="painelSecoes">
+                    <div class="painel-cab">
+                        <h2>🗂️ Seções / Categorias</h2>
+                        <div class="cab-botoes">
+                            <button id="btnOrdemSecoes" class="btn btn-mini">&#8597; Editar ordem</button>
+                            <button id="btnAddSecao" class="btn btn-mini">+ Adicionar Seção</button>
+                        </div>
+                    </div>
+                    <div class="sub">Cada seção aparece só quando você clica em <b>Editar</b>. A ordem é a do cardápio.</div>
+                    <div id="listaSecoes"></div>
+                </div>
+
+                <div class="painel" id="painelAdicionais">
+                    <div class="painel-cab">
+                        <h2>🏷️ Adicionais e opções de pizza</h2>
+                        <button id="btnOrdemAdicionais" class="btn btn-mini">&#8597; Editar ordem</button>
+                    </div>
+                    <div class="grupos-opcoes">
+                        <section class="grupo-opcao">
+                            <h3>Adicionais</h3>
+                            <div class="sub">Cadastre aqui. Em cada produto você escolhe quais adicionais o cliente vê.</div>
+                            <div id="listaAdicionais"></div>
+                            <button id="btnAddAdicional" class="btn btn-mini">+ Adicionar adicional</button>
+                        </section>
+                        <section class="grupo-opcao">
+                            <h3>Tamanhos de pizza</h3>
+                            <div id="listaTamanhos"></div>
+                            <button id="btnAddTamanho" class="btn btn-mini">+ Adicionar tamanho</button>
+                        </section>
+                        <section class="grupo-opcao">
+                            <h3>Bordas de pizza</h3>
+                            <div id="listaBordas"></div>
+                            <button id="btnAddBorda" class="btn btn-mini">+ Adicionar borda</button>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="faixa-salvar-fim">
+                    <button id="btnSalvarFim" class="btn btn-primario">Salvar e publicar</button>
+                </div>
+
+                <p class="rodape-admin">
+                    Com Carinho · Painel administrativo — a senha fica só no servidor (site/dados.php, <code>ACESSO_ADMIN</code>).
+                </p>
+
+            </div>
+        </main>
+    </div>
+
+    <div id="modal" class="modal" hidden>
+        <div class="modal-caixa">
+            <div class="modal-cab">
+                <h3 id="modalTitulo">Adicionar</h3>
+                <button id="modalX" class="btn-icone" type="button" aria-label="Fechar">✕</button>
+            </div>
+            <div id="modalCorpo"></div>
+            <div class="modal-rodape" id="modalRodape"></div>
+        </div>
+    </div>
+
+    <script src="admin.js?v=15"></script>
+</body>
+</html>
