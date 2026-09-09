@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com data:; base-uri 'none'; form-action 'none'">
     <meta name="referrer" content="no-referrer">
     <title>Cardápio - Com Carinho</title>
     <style>
@@ -27,6 +27,7 @@
         header {
             padding: 12px 14px 9px;
             text-align: center;
+            border-bottom: 1px solid #f0ece9;
         }
         header .titulo {
             font-size: 21px;
@@ -47,10 +48,12 @@
             position: relative;
             display: flex;
             gap: 2px;
+            justify-content: safe center;
+            max-width: 560px;
+            margin: 0 auto;
             overflow-x: auto;
             white-space: nowrap;
             background: #fff;
-            border-top: 1px solid #f0ece9;
             padding: 3px 10px 0;
             -webkit-overflow-scrolling: touch;
             user-select: none;
@@ -206,7 +209,7 @@
         <div>Contato: <a href="tel:+553138354125">(31) 3835-4125</a></div>
     </footer>
 
-    <script src="catalogo.js"></script>
+    <script src="catalogo.php"></script>
     <script src="cardapio.js"></script>
 </body>
 </html>

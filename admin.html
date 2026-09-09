@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Administração - Com Carinho</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #f4f2f0; color: #2a2a2a; padding-bottom: 60px; }
+
+        .topo {
+            position: sticky; top: 0; z-index: 20;
+            background: #fff; border-bottom: 1px solid #e6e0dc;
+            padding: 12px 16px;
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .topo .titulo { font-size: 18px; font-weight: 700; color: #8c2a2a; }
+        .topo .subtitulo { font-size: 12px; color: #999; font-style: italic; }
+        .topo .dir { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+        .estado { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+        .estado.ok { background: #e7f4ea; color: #2e7d43; }
+        .estado.pendente { background: #fdf0e3; color: #b5691a; }
+
+        .barra-acoes {
+            max-width: 820px; margin: 16px auto 0; padding: 0 16px;
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 1px solid #d9d2cc; background: #fff; color: #333;
+            padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #faf7f5; }
+        .btn-primario { background: #8c2a2a; border-color: #8c2a2a; color: #fff; }
+        .btn-primario:hover { background: #7a2323; }
+        .btn-perigo { color: #b5322b; border-color: #e7c3c0; }
+        .btn-mini { padding: 5px 8px; font-size: 12px; border-radius: 8px; }
+
+        .aviso {
+            max-width: 820px; margin: 14px auto 0; padding: 12px 16px;
+            background: #fff8ec; border: 1px solid #f0dcc0; border-radius: 10px;
+            font-size: 12.5px; line-height: 1.5; color: #7a5a2e;
+        }
+        .aviso strong { color: #6a4a1e; }
+
+        .conteudo { max-width: 820px; margin: 0 auto; padding: 8px 16px; }
+
+        .painel {
+            background: #fff; border: 1px solid #e9e3de; border-radius: 14px;
+            padding: 16px; margin-top: 16px;
+        }
+        .painel > h2 {
+            font-size: 15px; color: #8c2a2a; margin-bottom: 4px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .painel > p.dica { font-size: 12px; color: #999; margin-bottom: 12px; }
+
+        .linha-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 0; border-bottom: 1px solid #f0ebe7;
+        }
+        .linha-item:last-child { border-bottom: none; }
+        .linha-item input[type="text"], .linha-item input[type="number"] {
+            flex: 1; min-width: 0;
+        }
+        .linha-item .preco-inp { flex: 0 0 110px; }
+
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%; border: 1px solid #d9d2cc; border-radius: 8px;
+            padding: 8px 10px; font-size: 13px; background: #fff; color: #2a2a2a;
+        }
+        textarea { resize: vertical; min-height: 54px; line-height: 1.4; }
+        label.campo { display: block; font-size: 12px; font-weight: 600; color: #666; margin-bottom: 12px; }
+        label.campo > input, label.campo > textarea, label.campo > select { margin-top: 4px; font-weight: 400; }
+
+        .grupo-cat { margin-top: 14px; }
+        .grupo-cat > h3 {
+            font-size: 13px; color: #555; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #efe7e2;
+        }
+
+        .card-produto {
+            border: 1px solid #e9e3de; border-radius: 12px; padding: 12px;
+            margin-bottom: 10px; background: #fdfbfa;
+            display: grid; grid-template-columns: 96px 1fr; gap: 12px;
+        }
+        .foto-box {
+            width: 96px; height: 96px; border-radius: 10px; background: #ece7e3 center/cover no-repeat;
+            border: 1px dashed #cdbfb6; display: flex; align-items: center; justify-content: center;
+            font-size: 10px; color: #a08c80; text-align: center; padding: 4px;
+        }
+        .campos-produto { display: flex; flex-direction: column; gap: 8px; }
+        .campos-produto .duas { display: flex; gap: 8px; }
+        .campos-produto .duas > * { flex: 1; }
+        .foto-acoes { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+        .acoes-produto { display: flex; gap: 6px; grid-column: 1 / -1; justify-content: flex-end; }
+
+        .btn-icone {
+            border: 1px solid #d9d2cc; background: #fff; width: 30px; height: 30px;
+            border-radius: 8px; cursor: pointer; font-size: 14px; color: #666; flex: none;
+        }
+        .btn-icone:hover { background: #f5f0ec; }
+
+        .exportado { margin-top: 12px; }
+        .exportado textarea { min-height: 120px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
+
+        .rodape-admin { max-width: 820px; margin: 20px auto 0; padding: 0 16px; font-size: 12px; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="topo">
+        <div>
+            <div class="titulo">Administração</div>
+            <div class="subtitulo">Com Carinho</div>
+        </div>
+        <div class="dir">
+            <span id="estado" class="estado ok">Carregando…</span>
+            <a class="btn" href="index.html" target="_blank" rel="noopener">Ver cardápio ↗</a>
+        </div>
+    </div>
+
+    <div class="barra-acoes">
+        <button id="btnSalvar" class="btn btn-primario">Salvar e publicar</button>
+    </div>
+
+    <div class="aviso">
+        Clique em <strong>Salvar e publicar</strong> e pronto: o cardápio já muda para todos os
+        clientes. Na primeira vez o site pede a senha de administração.
+    </div>
+
+    <div id="erroCarregar" class="aviso" style="background:#fdecea;border-color:#f0c4c0;color:#8a2a22" hidden></div>
+
+    <main class="conteudo">
+
+        <section class="painel">
+            <h2>Seções do cardápio</h2>
+            <p class="dica">A ordem aqui é a ordem em que aparecem no cardápio. Renomear não quebra os produtos.</p>
+            <div id="listaSecoes"></div>
+            <button id="btnAddSecao" class="btn btn-mini" style="margin-top:10px">+ Adicionar seção</button>
+        </section>
+
+        <section class="painel">
+            <h2>Produtos</h2>
+            <p class="dica">Pizzas usam tamanho + borda + adicionais (preço vem dos tamanhos). Os demais têm preço fixo.</p>
+            <div id="listaProdutos"></div>
+        </section>
+
+        <section class="painel">
+            <h2>Adicionais (pizza)</h2>
+            <div id="listaAdicionais"></div>
+            <button id="btnAddAdicional" class="btn btn-mini" style="margin-top:10px">+ Adicionar adicional</button>
+        </section>
+
+        <section class="painel">
+            <h2>Tamanhos de pizza</h2>
+            <div id="listaTamanhos"></div>
+            <button id="btnAddTamanho" class="btn btn-mini" style="margin-top:10px">+ Adicionar tamanho</button>
+        </section>
+
+        <section class="painel">
+            <h2>Bordas de pizza</h2>
+            <div id="listaBordas"></div>
+            <button id="btnAddBorda" class="btn btn-mini" style="margin-top:10px">+ Adicionar borda</button>
+        </section>
+
+        <section class="painel">
+            <h2>Contato</h2>
+            <label class="campo">Número de WhatsApp (com DDI e DDD, só números — ex.: 553138354125)
+                <input type="text" id="campoWhatsapp" inputmode="numeric" autocomplete="off">
+            </label>
+        </section>
+
+    </main>
+
+    <p class="rodape-admin">
+        Mantenha o endereço desta página em segredo. A senha para publicar fica no servidor, em
+        <code>dados.php</code> (constante <code>SENHA_ADMIN</code>) — troque-a. Se a hospedagem
+        permitir, proteja também a pasta com senha (ex.: <code>.htpasswd</code>).
+    </p>
+
+    <script src="admin.js"></script>
+</body>
+</html>
