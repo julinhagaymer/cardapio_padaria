@@ -8,6 +8,10 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Painel — Com Carinho</title>
     <style>
+        /* Sem isto, elementos com display:flex/grid ignoram o atributo "hidden"
+           quando um seletor do autor (ex.: .campo{display:flex}) tem a mesma
+           especificidade da regra padrão do navegador — e o do autor vence. */
+        [hidden] { display: none !important; }
         :root {
             --sidebar: #2a1a12;
             --bg: #efe8dd;
@@ -47,9 +51,18 @@
         .caixa-login p { font-size: 13px; color: var(--txt-fraco); margin: 6px 0 18px; }
         .caixa-login input {
             width: 100%; border: 1px solid #d8ccba; border-radius: 10px;
-            padding: 11px 13px; font-size: 14px; margin-bottom: 12px; background: #fff;
+            padding: 11px 13px; font-size: 14px; background: #fff;
         }
         .caixa-login button { width: 100%; justify-content: center; }
+        .campo-senha { position: relative; margin-bottom: 12px; }
+        .campo-senha input { padding-right: 58px; }
+        .campo-senha .ver-senha {
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+            width: auto; background: none; border: none; box-shadow: none;
+            color: var(--marrom-forte); font-size: 12px; font-weight: 700;
+            cursor: pointer; padding: 6px 8px;
+        }
+        .campo-senha .ver-senha:hover { background: none; }
         .erro-login { color: #b5322b; font-size: 12px; margin-top: 10px; }
 
         /* ---------- Layout ---------- */
@@ -264,7 +277,25 @@
         /* produtos */
         .grupo-cat { margin-top: 14px; }
         .grupo-cat:first-child { margin-top: 4px; }
+        /* modo "Editar ordem": h3 sozinho, direto dentro de .grupo-cat */
         .grupo-cat > h3 { margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #ece0cf; }
+        /* lista normal: h3 + botão "Duplicar produto" lado a lado */
+        .grupo-cat-cab {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #ece0cf;
+        }
+        .grupo-cat-cab h3 { margin: 0; }
+
+        /* escolher qual produto duplicar */
+        .lista-escolher { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+        .item-escolher {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            width: 100%; text-align: left; border: 1px solid var(--linha); border-radius: 10px;
+            padding: 10px 12px; background: #fdfbf7; cursor: pointer; font: inherit; color: inherit;
+        }
+        .item-escolher:hover { background: #f2ebdf; border-color: #d9cdbb; }
+        .item-escolher-nome { font-size: 13px; font-weight: 700; }
+        .item-escolher-preco { font-size: 12px; font-weight: 700; color: var(--marrom-forte); white-space: nowrap; }
 
         /* lista de produtos: 2 por fileira no desktop */
         .grid-produtos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -378,6 +409,13 @@
         .modal-corpo-campo .campo-rot-txt { margin-bottom: 4px; }
         .modal-rodape { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
 
+        /* Adicionar vários produtos de uma vez */
+        .modal-caixa--lote { max-width: 560px; }
+        .lote-linha { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+        .lote-linha > input[type="text"] { flex: 1; min-width: 0; }
+        .lote-linha .campo-preco { flex: 0 0 108px; }
+        .lote-linha .btn-icone { flex: none; }
+
         .modal-sucesso { text-align: center; padding: 6px 4px 2px; }
         .modal-sucesso .ok-emoji { line-height: 0; }
         .modal-sucesso .ok-emoji svg { display: block; margin: 0 auto; }
@@ -425,7 +463,10 @@
         <div class="caixa-login">
             <div class="marca-nome">Com Carinho</div>
             <p>Digite a senha de acesso ao painel.</p>
-            <input type="password" id="senhaLogin" autocomplete="current-password" placeholder="Senha">
+            <div class="campo-senha">
+                <input type="password" id="senhaLogin" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Senha">
+                <button type="button" id="verSenha" class="ver-senha">ver</button>
+            </div>
             <button id="btnEntrar" class="btn btn-primario">Entrar</button>
             <div id="erroLogin" class="erro-login" hidden></div>
         </div>
@@ -443,6 +484,7 @@
                 <a data-alvo="painelProdutos"><span class="ic">📦</span> Produtos</a>
                 <a data-alvo="painelSecoes"><span class="ic">🗂️</span> Categorias / Seções</a>
                 <a data-alvo="painelAdicionais"><span class="ic">🏷️</span> Adicionais</a>
+                <a href="pedidos.php"><span class="ic">🧾</span> Pedidos</a>
             </nav>
             <button id="btnSair" class="btn-sair"><span>↩</span> Sair</button>
         </aside>
@@ -485,6 +527,7 @@
                         <h2>📦 Produtos</h2>
                         <div class="cab-botoes">
                             <button id="btnEditarOrdem" class="btn btn-mini">&#8597; Editar ordem</button>
+                            <button id="btnAddVarios" class="btn btn-mini">+ Vários de uma vez</button>
                             <button id="btnAddProduto" class="btn btn-primario">+ Adicionar produto</button>
                         </div>
                     </div>
@@ -535,7 +578,7 @@
                 </div>
 
                 <p class="rodape-admin">
-                    Com Carinho · Painel administrativo — a senha fica só no servidor (site/dados.php, <code>ACESSO_ADMIN</code>).
+                    Com Carinho · Painel administrativo — a senha fica só no servidor, como hash em <code>config/senha.local.php</code> (fora do código).
                 </p>
 
             </div>
@@ -553,6 +596,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=15"></script>
+    <script src="admin.js?v=27"></script>
 </body>
 </html>

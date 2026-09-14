@@ -133,7 +133,9 @@
         calcular();
     }
 
-    function enviarPedido() {
+    // Só coloca no carrinho (não manda nada ainda — isso só acontece quando o
+    // cliente finalizar o pedido, no modal que o carrinho.js controla).
+    function adicionarAoCarrinho() {
         if (ehPizza) {
             const semTamanho = !tamanhoSelecionado();
             const semBorda = !bordaSelecionada();
@@ -146,41 +148,31 @@
             }
         }
 
-        const linhas = ["Olá! Gostaria de fazer um pedido:", ""];
+        const item = {
+            produtoId: produto.id,
+            qtd: qtd,
+            tamanho: ehPizza ? tamanhoSelecionado().rotulo : null,
+            borda: ehPizza ? bordaSelecionada().rotulo : null,
+            adicionais: adicionaisSelecionados().map(function (a) { return a.rotulo; }),
+            obs: observacao.value.trim()
+        };
+        carrinhoAdicionar(item);
 
-        if (ehPizza) {
-            const t = tamanhoSelecionado();
-            const b = bordaSelecionada();
-            const adicionais = adicionaisSelecionados();
-            linhas.push("*Item:* Pizza " + produto.nome + " (Qtd: " + qtd + ")");
-            linhas.push("*Ingredientes:* " + produto.descricao);
-            linhas.push("*Tamanho:* " + t.rotulo);
-            linhas.push("*Borda:* " + b.rotulo + (b.preco ? " (+ " + formatarMoeda(b.preco) + ")" : ""));
-            if (adicionais.length) {
-                linhas.push("*Adicionais:* " + adicionais.map(function (a) { return a.rotulo; }).join(", "));
-            }
-        } else {
-            linhas.push("*Item:* " + produto.nome + " (Qtd: " + qtd + ")");
-            linhas.push("*Descrição:* " + produto.descricao);
-            const adc = adicionaisSelecionados();
-            if (adc.length) {
-                linhas.push("*Adicionais:* " + adc.map(function (a) { return a.rotulo; }).join(", "));
-            }
-        }
+        // reseta o formulário pra um próximo item, caso o cliente volte aqui
+        qtd = 1;
+        document.getElementById("qtdNum").textContent = "1";
+        document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked')
+            .forEach(function (i) { i.checked = false; });
+        observacao.value = "";
+        contador.textContent = "0";
+        calcular();
 
-        const obs = observacao.value.trim();
-        if (obs) linhas.push("*Observação:* " + obs);
-
-        linhas.push("");
-        linhas.push("*Total: " + document.getElementById("totalValor").textContent + "*");
-
-        const url = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(linhas.join("\n"));
-        window.open(url, "_blank", "noopener");
+        carrinhoConfirmarAdicao();
     }
 
     document.getElementById("btnMenos").addEventListener("click", function () { mudarQtd(-1); });
     document.getElementById("btnMais").addEventListener("click", function () { mudarQtd(1); });
-    document.getElementById("btnPedir").addEventListener("click", enviarPedido);
+    document.getElementById("btnAdicionarCarrinho").addEventListener("click", adicionarAoCarrinho);
 
     calcular();
 })();

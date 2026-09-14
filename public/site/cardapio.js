@@ -133,7 +133,9 @@
         card.addEventListener("click", function () {
             // guarda a posição para voltar exatamente aqui depois
             try { sessionStorage.setItem("cardapioY", String(window.pageYOffset)); } catch (e) {}
-            location.href = "produto.html?id=" + encodeURIComponent(produto.id);
+            var url = "produto.html?id=" + encodeURIComponent(produto.id);
+            if (MESA_ATUAL) url += "&mesa=" + MESA_ATUAL;
+            location.href = url;
         });
 
         const info = document.createElement("div");

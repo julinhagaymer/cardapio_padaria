@@ -1,0 +1,9 @@
+# O arquivo do cardápio (catalogo.dados.json) é lido pelo PHP, nunca pela web.
+# Bloqueia acesso direto caso esta pasta acabe dentro da raiz pública.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

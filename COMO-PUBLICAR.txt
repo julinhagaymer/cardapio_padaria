@@ -1,0 +1,165 @@
+COMO PUBLICAR O CARDÁPIO NA HOSPEDAGEM
+=====================================
+
+A regra de ouro: o servidor web só pode "enxergar" a pasta  public/ .
+As pastas  lib/  config/  dados/  ferramentas/  php/  ficam FORA dela.
+
+Existem duas formas, dependendo do que a sua hospedagem permite.
+
+
+------------------------------------------------------------------
+FORMA A — a hospedagem deixa escolher a "raiz do site" (recomendada)
+------------------------------------------------------------------
+(cPanel: "Domínios" / "Addon Domains" tem o campo "Document Root";
+ Plesk: "Hospedagem" > "Document root"; ou um VPS.)
+
+1. Suba a pasta do projeto INTEIRA para dentro da conta, por exemplo:
+       /home/SEU_USUARIO/cardapio/
+   (Não precisa subir a pasta  php/  — ela é só o PHP para rodar no
+    seu Windows. A hospedagem já tem PHP.)
+
+2. Aponte a "raiz do site" (Document Root) do domínio para:
+       /home/SEU_USUARIO/cardapio/public
+
+3. Defina a senha do painel (uma vez):
+   - Se tiver acesso SSH ou "Terminal" no painel da hospedagem:
+         cd /home/SEU_USUARIO/cardapio
+         php ferramentas/definir-senha.php "SuaSenhaForte#Aqui"
+   - Sem terminal: veja o item "SEM ACESSO A TERMINAL" mais abaixo.
+
+4. Confira que a pasta  dados/  tem permissão de escrita (geralmente já
+   tem). Se ao salvar der erro de gravação, ajuste:
+         chmod 775 /home/SEU_USUARIO/cardapio/dados
+
+5. Ligue o HTTPS do domínio (cPanel: "SSL/TLS Status" e depois
+   "Force HTTPS Redirect"). Isso ativa sozinho o cookie "secure" da
+   sessão.
+
+Endereços finais:
+   Cardápio:  https://seudominio.com/site/
+   Painel:    https://seudominio.com/admin/admin.html
+
+
+------------------------------------------------------------------
+FORMA B — a raiz do site é fixa (sempre  public_html/ )
+------------------------------------------------------------------
+(hospedagem compartilhada simples, sem opção de mudar o Document Root.)
+
+1. Suba o CONTEÚDO de  public/  para dentro de  public_html/  :
+       public_html/site/    (index.html, produto.html, *.js, catalogo.php)
+       public_html/admin/   (admin.html, admin.js, api.php)
+
+2. Suba  lib/  config/  dados/  ferramentas/  UM NÍVEL ACIMA de
+   public_html/  (normalmente a pasta  /home/SEU_USUARIO/ ):
+       /home/SEU_USUARIO/lib/
+       /home/SEU_USUARIO/config/
+       /home/SEU_USUARIO/dados/
+       /home/SEU_USUARIO/ferramentas/
+
+   Se a hospedagem NÃO deixar subir nada acima de public_html/, suba
+   essas quatro pastas para dentro de  public_html/  mesmo. Elas têm um
+   arquivo  .htaccess  que bloqueia o acesso pela web — funciona em
+   servidores Apache (a grande maioria).
+
+3. Defina a senha (item "SEM ACESSO A TERMINAL" abaixo, ou via SSH:
+       php ferramentas/definir-senha.php "SuaSenhaForte#Aqui" ).
+
+4. Permissão de escrita na pasta  dados/  (chmod 775 se necessário).
+
+5. Ligue o HTTPS do domínio.
+
+Endereços finais:
+   Cardápio:  https://seudominio.com/site/
+   Painel:    https://seudominio.com/admin/admin.html
+
+
+------------------------------------------------------------------
+SEM ACESSO A TERMINAL (definir a senha pelo navegador de arquivos)
+------------------------------------------------------------------
+1. No seu Windows, na pasta do projeto, rode:
+       php ferramentas\definir-senha.php "SuaSenhaForte#Aqui"
+   Isso cria/atualiza o arquivo  config\senha.local.php .
+
+2. Suba esse  config/senha.local.php  para a pasta  config/  da
+   hospedagem (no mesmo lugar das outras: acima de public_html/ ou,
+   no pior caso, dentro dele).
+
+O arquivo guarda só o "hash" da senha — a senha em si não fica em
+lugar nenhum.
+
+
+------------------------------------------------------------------
+AJUSTES (o "arquivo de ambiente" do projeto)
+------------------------------------------------------------------
+Não há credenciais de banco de dados neste projeto. Os ajustes de
+ambiente ficam em  config/config.local.php  (fora da área pública, fora
+do Git) — WhatsApp padrão, parâmetros da trava de login, limite de
+upload e o caminho do arquivo da senha. Modelo comentado em
+config/config.exemplo.php.
+
+Se o arquivo não existir, o sistema usa valores-padrão embutidos. Suba
+o config.local.php junto com o senha.local.php (mesma pasta config/).
+
+------------------------------------------------------------------
+CÓPIAS DE SEGURANÇA (BACKUP AUTOMÁTICO)
+------------------------------------------------------------------
+O catálogo e os pedidos ganham cópias de segurança sozinhos, sem precisar
+fazer nada — mas com regras BEM diferentes, porque só um dos dois carrega
+dado de gente:
+
+- Catálogo (sem dado de comprador): 1 cópia a cada "Salvar" do admin, em
+  dados/backups/catalogo/. Guarda as últimas 30 (ajustável).
+
+- Pedidos (TEM dado de comprador — nome, telefone, endereço): no máximo
+  1 cópia por dia, em dados/backups/pedidos/, e some sozinha depois de
+  ~2 dias (hoje + ontem). Ela existe só pra o vendedor conferir se ontem
+  deu algum problema — não é um arquivo histórico de longo prazo.
+
+  O ARQUIVO PRINCIPAL dos pedidos (dados/pedidos.json) segue a mesma
+  lógica: só guarda os dados completos (nome/telefone/endereço) de hoje e
+  ontem. Passado isso, cada pedido vira um registro ANÔNIMO — só data,
+  valor total, produtos e se foi mesa ou entrega, sem nada que identifique
+  quem comprou — guardado por até 3 meses em dados/pedidos_historico.json,
+  para uma futura tela de histórico/relatório de vendas.
+
+Os dois tipos de pasta de backup têm a mesma proteção de dados/: bloqueada
+pela web.
+
+Se o arquivo principal do catálogo sumir ou for sobrescrito por engano
+(upload errado, edição direta no servidor, falha de disco...), dá pra
+restaurar em segundos, sem precisar mexer em nada manualmente:
+       cd /home/SEU_USUARIO/cardapio
+       php ferramentas/restaurar-backup.php catalogo
+       php ferramentas/restaurar-backup.php pedidos
+O script lista as cópias disponíveis com data/hora e deixa escolher qual
+restaurar. A versão atual (mesmo que esteja com problema) também vira uma
+cópia antes de ser sobrescrita — então, se escolher a cópia errada, é só
+rodar de novo. Para pedidos, só há cópia disponível dos últimos ~2 dias,
+por design (ver acima).
+
+------------------------------------------------------------------
+O QUE NÃO SUBIR
+------------------------------------------------------------------
+- php/                       (só serve para rodar no seu Windows)
+- dados/catalogo.dados.json  (é criado sozinho no primeiro "Salvar";
+                              se quiser levar o cardápio atual, pode
+                              subir este arquivo também)
+
+------------------------------------------------------------------
+CONFERIR DEPOIS DE PUBLICAR
+------------------------------------------------------------------
+- Abrir  https://seudominio.com/site/  -> o cardápio aparece.
+- Abrir  https://seudominio.com/admin/admin.html  -> pede a senha.
+- Tentar abrir no navegador:
+       https://seudominio.com/config/senha.local.php
+  Tem que dar erro 403 ou 404 (nunca mostrar conteúdo).
+
+------------------------------------------------------------------
+ERROS DO PHP
+------------------------------------------------------------------
+O visitante nunca vê detalhe de erro na tela. Se algo der errado, o
+detalhe técnico é gravado em:
+       dados/php-erros.log
+(pasta fora da área pública; confira lá quando o painel apresentar
+problema). O arquivo public/.user.ini reforça isso em hospedagem
+PHP-FPM. A pasta dados/ precisa ter permissão de escrita.

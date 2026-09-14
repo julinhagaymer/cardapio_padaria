@@ -21,8 +21,9 @@ echo   ================================================
 echo    Cardapio - Com Carinho   (servidor local)
 echo   ================================================
 echo.
-echo    Cardapio:  http://127.0.0.1:8000/site/
-echo    Painel:    http://127.0.0.1:8000/admin/admin.html
+echo    Cardapio (delivery):    http://127.0.0.1:8000/site/index.html?mesa=0
+echo    Cardapio (lanchonete):  http://127.0.0.1:8000/site/index.html?mesa=1
+echo    Painel:                 http://127.0.0.1:8000/admin/admin.html
 echo.
 echo    Use o endereco com 127.0.0.1 (NAO "localhost"): neste PC o
 echo    "localhost" tenta IPv6 primeiro e trava ~2s a cada pagina.
@@ -31,7 +32,13 @@ echo    NAO FECHE esta janela enquanto estiver usando.
 echo    Para parar: feche a janela ou aperte Ctrl + C.
 echo.
 
-"%PHP%" -S 127.0.0.1:8000 -t "%~dp0."
+if not exist "%~dp0config\senha.local.php" (
+    echo    [ATENCAO] Nenhuma senha do painel definida ainda.
+    echo    Rode em outra janela:  php ferramentas\definir-senha.php
+    echo.
+)
+
+"%PHP%" -S 127.0.0.1:8000 -t "%~dp0public"
 
 echo.
 echo   ------------------------------------------------------------

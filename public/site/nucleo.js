@@ -62,7 +62,9 @@ if (typeof CATALOGO === "undefined") {
             { id: "cheddar", rotulo: "Cheddar", preco: 8 },
             { id: "bacon", rotulo: "Bacon", preco: 7 },
             { id: "palmito", rotulo: "Palmito", preco: 10 }
-        ]
+        ],
+        cidades: ["Itabira"],
+        bairrosPorCidade: { "Itabira": ["Centro", "Santa Ruth"] }
     };
 }
 
@@ -73,6 +75,12 @@ var PRODUTOS = CATALOGO.produtos;
 var TAMANHOS = CATALOGO.tamanhos;
 var BORDAS = CATALOGO.bordas;
 var ADICIONAIS = CATALOGO.adicionais;
+var CIDADES = CATALOGO.cidades || ["Itabira"];
+var BAIRROS_POR_CIDADE = CATALOGO.bairrosPorCidade || {};
+
+// Endereço fixo da loja, pra opção "Retire na loja" — mesmo endereço do
+// rodapé do cardápio (index.html).
+var ENDERECO_LOJA = "Rua Dona Fiota, 233 – Santa Ruth, Itabira/MG";
 
 function formatarMoeda(valor) {
     return "R$ " + Number(valor).toFixed(2).replace(".", ",");
@@ -93,6 +101,35 @@ function imagemSegura(url) {
     }
     return "";
 }
+
+/* Origem do pedido: MESA (QR Code de uma mesa da lanchonete) ou ENTREGA
+   (acesso normal ao site, delivery). O QR de cada mesa aponta para
+   "index.html?mesa=N"; guardamos o número na sessionStorage para persistir
+   enquanto o cliente navega até produto.html, sem depender do link carregar
+   o parâmetro toda vez. Sem "?mesa=" (e sem nada guardado ainda nesta
+   aba), o pedido é tratado como entrega — esse é o padrão. */
+var MESA_ATUAL = (function () {
+    try {
+        var daUrl = new URLSearchParams(location.search).get("mesa");
+        if (daUrl !== null) {
+            var n = parseInt(daUrl, 10);
+            if (n > 0 && n <= 999) {
+                sessionStorage.setItem("pedido_mesa", String(n));
+                return n;
+            }
+            // "mesa" presente mas inválido/zero (ex.: ?mesa=0): sai do modo
+            // mesa explicitamente, mesmo que uma visita anterior nesta aba
+            // tivesse guardado um número — sem isto, quem voltasse pro link
+            // de entrega continuaria preso no modo mesa.
+            sessionStorage.removeItem("pedido_mesa");
+            return null;
+        }
+        var guardado = parseInt(sessionStorage.getItem("pedido_mesa"), 10);
+        return guardado > 0 ? guardado : null;
+    } catch (e) {
+        return null;
+    }
+})();
 
 function buscarProduto(id) {
     return PRODUTOS.find(function (p) { return p.id === id; }) || null;

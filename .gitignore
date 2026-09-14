@@ -1,3 +1,7 @@
 php/
-site/catalogo.dados.json
+dados/*.json
+dados/*.log
+dados/backups/
 *.tmp*
+config/senha.local.php
+config/config.local.php

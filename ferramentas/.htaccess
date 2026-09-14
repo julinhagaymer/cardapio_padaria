@@ -1,0 +1,10 @@
+# Nada nesta pasta é para ser acessado pela web (só linha de comando).
+# Vale em hospedagem Apache; o servidor local ignora, mas os scripts aqui
+# já recusam execução fora do CLI.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

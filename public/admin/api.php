@@ -1,30 +1,26 @@
 <?php
 declare(strict_types=1);
 
-/* API do painel administrativo.
-   Fica FORA da pasta do cardápio; só reaproveita a lógica e o arquivo de
-   dados do site (dados.php + catalogo.dados.json, que moram junto do site). */
+/* API do painel administrativo (pasta pública public/admin/).
+   A lógica de verdade vive em lib/, FORA da pasta pública. */
 
-$candidatos = [
-    __DIR__ . '/../site/dados.php',  // layout local: admin/ e site/ lado a lado
-    __DIR__ . '/../dados.php',        // hospedagem: painel dentro da pasta do site
-    __DIR__ . '/dados.php',           // dados.php copiado para cá
-];
-$achou = false;
-foreach ($candidatos as $c) {
-    if (is_file($c)) { require $c; $achou = true; break; }
+$libDir = null;
+foreach ([__DIR__ . '/../../lib', __DIR__ . '/../lib', __DIR__] as $d) {
+    if (is_file($d . '/dados.php')) { $libDir = $d; break; }
 }
-if (!$achou) {
+if ($libDir === null) {
     http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok' => false, 'erro' => 'dados.php não encontrado. Ajuste o caminho em admin/api.php.']);
+    echo json_encode(['ok' => false, 'erro' => 'lib/ não encontrado. Ajuste o caminho em public/admin/api.php.']);
     exit;
 }
+require_once $libDir . '/bootstrap.php';
+require_once $libDir . '/dados.php';
 
 iniciar_sessao();
 header('Cache-Control: no-store');
 
-$acao = $_GET['acao'] ?? '';
+$acao = ler_opcao($_GET, 'acao', ['entrar', 'sair'], '');
 
 if ($acao === 'entrar') {
     responder_entrar();
@@ -50,4 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // GET -> devolve o catálogo atual em JSON (o painel lê isto ao abrir)
 header('Content-Type: application/json; charset=utf-8');
-echo json_encode(carregar_catalogo(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+echo json_encode(
+    carregar_catalogo(),
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+);

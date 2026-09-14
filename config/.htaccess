@@ -1,0 +1,10 @@
+# Bloqueia acesso pela web a tudo nesta pasta (senha.local.php etc.).
+# Vale em hospedagem Apache. O servidor local de desenvolvimento ignora este
+# arquivo, mas lá os .php desta pasta não devolvem conteúdo mesmo.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

@@ -1,0 +1,25 @@
+SENHA DO PAINEL ADMINISTRATIVO
+=============================
+
+A senha NÃO fica escrita em lugar nenhum. O que fica guardado, só neste
+servidor, é o HASH dela (password_hash) no arquivo:
+
+    config/senha.local.php
+
+Esse arquivo NÃO vai para o Git (está no .gitignore) e não é servido pela
+web. Para criar ou trocar a senha, rode na pasta do projeto:
+
+    php ferramentas/definir-senha.php
+
+ou, sem digitar interativamente:
+
+    php ferramentas/definir-senha.php "suaSenhaForte"
+
+Regras: mínimo de 8 caracteres; de preferência com símbolos.
+
+Observação sobre segurança
+--------------------------
+Se alguém obtém acesso de escrita a estas pastas, a senha do painel deixa de
+ser a barreira relevante (a pessoa poderia alterar o próprio código). A
+proteção nesse nível é do servidor/hospedagem: permissões de arquivo
+corretas, acesso SSH/FTP protegido e HTTPS ligado.

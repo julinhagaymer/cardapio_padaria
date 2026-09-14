@@ -5,26 +5,97 @@ declare(strict_types=1);
    Backend do cardápio. Guarda tudo em catalogo.dados.json (criado no
    primeiro "Salvar"). Antes disso, usa os valores de fábrica abaixo.
 
-   >>> TROQUE a senha de acesso ao painel aqui (fica só no servidor): <<<
+   A SENHA do painel NÃO fica aqui. Ela é guardada como hash (password_hash)
+   em  config/senha.local.php , que não vai para o versionamento.
+   Para definir/trocar:   php ferramentas/definir-senha.php
    ===================================================================== */
-const ACESSO_ADMIN = 'cc4125';
 
-const ARQ_DADOS   = __DIR__ . '/catalogo.dados.json';
-const LIMITE_BYTES = 6 * 1024 * 1024; // trava para fotos pesadas demais
+/* Erros do PHP: nada na tela, tudo no log privado (dados/php-erros.log). */
+require_once __DIR__ . '/bootstrap.php';
+
+/* Funções de limpeza/validação de entrada (ler_texto, ler_email, ler_inteiro,
+   ler_numero, ler_digitos, ler_opcao...). */
+require_once __DIR__ . '/entrada.php';
+
+/* Trava de tentativas de login por IP. */
+require_once __DIR__ . '/limite_login.php';
+
+/* Cópia de segurança automática a cada "Salvar" (ver responder_post). */
+require_once __DIR__ . '/backup.php';
+
+/* Fica FORA da pasta pública (public/), em dados/ — o servidor web não alcança. */
+const ARQ_DADOS = __DIR__ . '/../dados/catalogo.dados.json';
+
+/* Tamanho máximo do POST do painel (bytes). Vem da config central. */
+defined('LIMITE_BYTES') || define('LIMITE_BYTES', (int) config('limite_bytes', 6 * 1024 * 1024));
+
+/* Lê o hash da senha do painel de um arquivo fora do código-fonte.
+   Primeiro tenta o caminho da config central; depois os lugares de sempre. */
+function senha_hash_painel(): string
+{
+    $candidatos = [];
+    $doConfig = config('senha_arquivo');
+    if (is_string($doConfig) && $doConfig !== '') {
+        $candidatos[] = $doConfig;
+    }
+    $candidatos[] = __DIR__ . '/../config/senha.local.php'; // padrão: config/ ao lado de lib/
+    $candidatos[] = __DIR__ . '/config/senha.local.php';
+    $candidatos[] = __DIR__ . '/senha.local.php';
+
+    foreach ($candidatos as $arq) {
+        if (is_file($arq)) {
+            $h = include $arq;
+            if (is_string($h) && $h !== '') {
+                return $h;
+            }
+        }
+    }
+    return '';
+}
 
 /* ---- Sessão do painel ---- */
+
+/* A conexão está em HTTPS? Considera também proxy reverso (a hospedagem quase
+   sempre coloca um na frente e o PHP não vê $_SERVER['HTTPS']). */
+function conexao_https(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+        return true;
+    }
+    if ((string) ($_SERVER['SERVER_PORT'] ?? '') === '443') {
+        return true;
+    }
+    if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+        return true;
+    }
+    if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '')) === 'on') {
+        return true;
+    }
+    return false;
+}
+
 function iniciar_sessao(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
+
+    /* Endurecimento — precisa vir ANTES de session_start(): */
+    ini_set('session.use_strict_mode', '1');  // recusa ID de sessão que não foi o PHP que gerou (anti session fixation)
+    ini_set('session.use_only_cookies', '1'); // nunca aceita o ID da sessão pela URL
+    ini_set('session.use_trans_sid', '0');    // nunca cola o ID em links
+
+    session_name('painel_sid');               // não usa o nome padrão "PHPSESSID"
+
     session_set_cookie_params([
-        'lifetime' => 0,
-        'path' => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
-        'secure' => !empty($_SERVER['HTTPS']),
+        'lifetime' => 0,                 // cookie de sessão: expira ao fechar o navegador
+        'path'     => '/',
+        'domain'   => '',                // host-only: não vaza para subdomínios
+        'secure'   => conexao_https(),   // em HTTPS, o cookie só trafega criptografado
+        'httponly' => true,              // JavaScript não consegue ler o cookie (anti-roubo via XSS)
+        'samesite' => 'Lax',             // o cookie não acompanha requisições vindas de outros sites (anti-CSRF)
     ]);
+
     session_start();
 }
 
@@ -36,14 +107,52 @@ function sessao_valida(): bool
 function responder_entrar(): void
 {
     header('Content-Type: application/json; charset=utf-8');
-    $body = json_decode((string) file_get_contents('php://input'), true);
-    $senha = is_array($body) ? (string) ($body['senha'] ?? '') : '';
-    if (!hash_equals(ACESSO_ADMIN, $senha)) {
-        usleep(500000);
-        http_response_code(401);
-        echo json_encode(['ok' => false, 'erro' => 'Senha incorreta.']);
+
+    $ip = ip_cliente();
+
+    // 1) Este IP está de castigo? Nem chega a checar a senha.
+    $trava = login_pode_tentar($ip);
+    if (!$trava['ok']) {
+        $min = (int) ceil($trava['espera'] / 60);
+        http_response_code(429);
+        header('Retry-After: ' . $trava['espera']);
+        echo json_encode([
+            'ok'     => false,
+            'erro'   => 'Muitas tentativas. Aguarde ' . $min . ' min e tente de novo.',
+            'espera' => $trava['espera'],
+        ]);
         return;
     }
+
+    $body = json_decode((string) file_get_contents('php://input'), true);
+    $senha = ler_texto(is_array($body) ? $body : [], 'senha', 200);
+
+    $hash = senha_hash_painel();
+    if ($hash === '' || !password_verify($senha, $hash)) {
+        // 2) Registra a falha e, se estourou o limite, informa o bloqueio.
+        $bloqueio = login_registrar_falha($ip);
+        usleep(500000);
+        http_response_code($bloqueio > 0 ? 429 : 401);
+
+        if ($hash === '') {
+            $erro = 'Nenhuma senha definida no servidor. Rode: php ferramentas/definir-senha.php';
+        } elseif ($bloqueio > 0) {
+            $erro = 'Muitas tentativas erradas. Painel bloqueado por ' . (int) ceil($bloqueio / 60) . ' min.';
+            header('Retry-After: ' . $bloqueio);
+        } else {
+            $erro = 'Senha incorreta.';
+        }
+
+        $resp = ['ok' => false, 'erro' => $erro];
+        if ($bloqueio > 0) {
+            $resp['espera'] = $bloqueio;
+        }
+        echo json_encode($resp);
+        return;
+    }
+
+    // 3) Entrou: limpa a contagem deste IP e renova a sessão.
+    login_registrar_sucesso($ip);
     session_regenerate_id(true);
     $_SESSION['painel_ok'] = true;
     echo json_encode(['ok' => true]);
@@ -55,7 +164,14 @@ function responder_sair(): void
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $p = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], (bool) $p['secure'], (bool) $p['httponly']);
+        setcookie(session_name(), '', [
+            'expires'  => time() - 42000,
+            'path'     => $p['path'],
+            'domain'   => $p['domain'],
+            'secure'   => (bool) $p['secure'],
+            'httponly' => (bool) $p['httponly'],
+            'samesite' => $p['samesite'] ?: 'Lax',
+        ]);
     }
     session_destroy();
     echo json_encode(['ok' => true]);
@@ -64,7 +180,7 @@ function responder_sair(): void
 function catalogo_padrao(): array
 {
     return [
-        'whatsapp' => '553138354125',
+        'whatsapp' => (string) config('whatsapp_padrao', '553138354125'),
         'limiteObservacao' => 500,
         'categorias' => [
             ['id' => 'paes',     'nome' => 'Pães'],
@@ -132,15 +248,6 @@ function carregar_catalogo(): array
     return normalizar_catalogo(catalogo_padrao());
 }
 
-function num_pos($v): float
-{
-    if (is_string($v)) {
-        $v = str_replace(',', '.', trim($v));
-    }
-    $n = is_numeric($v) ? (float) $v : 0.0;
-    return $n >= 0 ? round($n, 2) : 0.0;
-}
-
 function slugificar(string $t): string
 {
     $de = ['á','à','â','ã','ä','é','è','ê','ë','í','ì','î','ï','ó','ò','ô','õ','ö','ú','ù','û','ü','ç','ñ',
@@ -184,14 +291,11 @@ function imagem_segura($url): string
 /* Autoridade de verdade: limpa e valida o que vier do admin. */
 function normalizar_catalogo(array $e): array
 {
-    $wpp = preg_replace('/\D+/', '', (string) ($e['whatsapp'] ?? '')) ?? '';
+    $wpp = ler_digitos($e, 'whatsapp', 20);
     if ($wpp === '') {
-        $wpp = '553138354125';
+        $wpp = preg_replace('/\D+/', '', (string) config('whatsapp_padrao', '553138354125')) ?: '553138354125';
     }
-    $lim = (int) num_pos($e['limiteObservacao'] ?? 500);
-    if ($lim < 1) {
-        $lim = 500;
-    }
+    $lim = ler_inteiro($e, 'limiteObservacao', 1, 5000, 500);
 
     $out = [
         'whatsapp' => $wpp,
@@ -208,11 +312,11 @@ function normalizar_catalogo(array $e): array
         if (!is_array($c)) {
             continue;
         }
-        $nome = trim((string) ($c['nome'] ?? ''));
+        $nome = ler_texto($c, 'nome', 60);
         if ($nome === '') {
             $nome = 'Seção';
         }
-        $id = (string) ($c['id'] ?? '');
+        $id = limpar_texto($c['id'] ?? '', 60);
         if ($id === '' || in_array($id, $idsCat, true)) {
             $id = id_unico(slugificar($nome), $idsCat);
         }
@@ -230,8 +334,8 @@ function normalizar_catalogo(array $e): array
             if (!is_array($o)) {
                 continue;
             }
-            $rot = trim((string) ($o['rotulo'] ?? ''));
-            $out[$chave][] = ['rotulo' => $rot !== '' ? $rot : 'Item', 'preco' => num_pos($o['preco'] ?? 0)];
+            $rot = ler_texto($o, 'rotulo', 60);
+            $out[$chave][] = ['rotulo' => $rot !== '' ? $rot : 'Item', 'preco' => ler_numero($o, 'preco', 0.0, 1000000.0)];
         }
     }
 
@@ -240,16 +344,16 @@ function normalizar_catalogo(array $e): array
         if (!is_array($o)) {
             continue;
         }
-        $rot = trim((string) ($o['rotulo'] ?? ''));
+        $rot = ler_texto($o, 'rotulo', 60);
         if ($rot === '') {
             $rot = 'Adicional';
         }
-        $aid = (string) ($o['id'] ?? '');
+        $aid = limpar_texto($o['id'] ?? '', 60);
         if ($aid === '' || in_array($aid, $idsAdd, true)) {
             $aid = id_unico(slugificar($rot), $idsAdd);
         }
         $idsAdd[] = $aid;
-        $out['adicionais'][] = ['id' => $aid, 'rotulo' => $rot, 'preco' => num_pos($o['preco'] ?? 0)];
+        $out['adicionais'][] = ['id' => $aid, 'rotulo' => $rot, 'preco' => ler_numero($o, 'preco', 0.0, 1000000.0)];
     }
 
     $idsProd = [];
@@ -257,11 +361,11 @@ function normalizar_catalogo(array $e): array
         if (!is_array($p)) {
             continue;
         }
-        $nome = trim((string) ($p['nome'] ?? ''));
+        $nome = ler_texto($p, 'nome', 80);
         if ($nome === '') {
             $nome = 'Produto';
         }
-        $id = (string) ($p['id'] ?? '');
+        $id = limpar_texto($p['id'] ?? '', 80);
         if ($id === '' || in_array($id, $idsProd, true)) {
             $id = id_unico(slugificar($nome), $idsProd);
         }
@@ -275,11 +379,11 @@ function normalizar_catalogo(array $e): array
             'categoria' => $cat,
             'tipo' => $tipo,
             'nome' => $nome,
-            'descricao' => trim((string) ($p['descricao'] ?? '')),
+            'descricao' => ler_texto($p, 'descricao', 1000),
             'imagem' => imagem_segura($p['imagem'] ?? ''),
         ];
         if ($tipo !== 'pizza') {
-            $item['preco'] = num_pos($p['preco'] ?? 0);
+            $item['preco'] = ler_numero($p, 'preco', 0.0, 1000000.0);
         }
 
         if (array_key_exists('adicionais', $p) && is_array($p['adicionais'])) {
@@ -336,6 +440,11 @@ function responder_post(): void
         return;
     }
 
+    $dir = dirname(ARQ_DADOS);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+    }
+
     $tmp = ARQ_DADOS . '.tmp' . getmypid();
     if (file_put_contents($tmp, $json, LOCK_EX) === false || !rename($tmp, ARQ_DADOS)) {
         @unlink($tmp);
@@ -343,6 +452,8 @@ function responder_post(): void
         echo json_encode(['ok' => false, 'erro' => 'Não consegui gravar. A pasta do site precisa ter permissão de escrita.']);
         return;
     }
+
+    backup_catalogo(ARQ_DADOS);
 
     echo json_encode(['ok' => true, 'catalogo' => $limpo]);
 }

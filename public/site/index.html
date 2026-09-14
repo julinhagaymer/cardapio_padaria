@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://images.unsplash.com data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="no-referrer">
+    <title>Cardápio - Com Carinho</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        /* Sem isto, elementos com display:flex/grid (ex.: .campo, .modal-carrinho)
+           ignoram o atributo "hidden" — a regra padrão do navegador ([hidden]{display:none})
+           tem a MESMA especificidade que ".campo{display:flex}", e a do autor (nossa) vence. */
+        [hidden] { display: none !important; }
+        html { scroll-behavior: smooth; }
+        :root {
+            --escuro: #2a1a12;
+            --marrom: #7d5648;
+            --marrom-forte: #5b3a2e;
+            --creme: #f2e6d7;
+            --creme-fraco: #b39c88;
+            --pagina: #f1ebe1;
+            --cartao: #fbf8f3;
+            --linha: #e7dcca;
+            --texto: #3a2a20;
+            --texto-fraco: #9c8b7c;
+        }
+        body {
+            background-color: var(--pagina);
+            color: var(--texto);
+            padding-bottom: 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .fixed-top {
+            position: sticky;
+            top: 0;
+            background-color: var(--cartao);
+            z-index: 100;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 6px 18px rgba(42,26,18,0.10);
+        }
+
+        header {
+            padding: 15px 14px 13px;
+            text-align: center;
+            background-color: var(--escuro);
+            position: relative;
+        }
+        header .marca-logo {
+            font-size: 24px;
+            line-height: 1;
+        }
+        header .marca-nome {
+            font-family: Georgia, "Times New Roman", serif;
+            font-style: italic;
+            font-size: 24px;
+            color: var(--creme);
+            letter-spacing: 0.3px;
+            margin-top: 3px;
+        }
+        header .marca-slogan {
+            font-size: 10.5px;
+            color: var(--creme-fraco);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .categorias-bar {
+            position: relative;
+            display: flex;
+            gap: 2px;
+            justify-content: safe center;
+            max-width: 560px;
+            margin: 0 auto;
+            overflow-x: auto;
+            white-space: nowrap;
+            background: var(--cartao);
+            border-bottom: 1px solid var(--linha);
+            padding: 3px 10px 0;
+            -webkit-overflow-scrolling: touch;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .categorias-bar::-webkit-scrollbar { display: none; }
+
+        .cat-btn {
+            background: none;
+            border: none;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--texto-fraco);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: color 0.25s ease;
+            outline: none;
+        }
+
+        .cat-btn.active {
+            color: #5b3a2e;
+            font-weight: 700;
+        }
+
+        .cat-indicador {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 3px;
+            border-radius: 3px;
+            background-color: #5b3a2e;
+            transform: translateX(0);
+            transition: transform 0.08s linear, width 0.08s linear;
+            pointer-events: none;
+            will-change: transform, width;
+        }
+        .cat-indicador.sem-transicao { transition: none; }
+
+        .container { max-width: 560px; margin: 0 auto; padding: 10px 14px 0; }
+
+        .categoria-secao { scroll-margin-top: var(--desloc, 112px); }
+
+        .categoria-titulo {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--texto);
+            text-align: center;
+            letter-spacing: 0.3px;
+            margin: 26px 0 15px;
+            padding-bottom: 9px;
+            position: relative;
+        }
+        .categoria-titulo::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 34px;
+            height: 3px;
+            border-radius: 3px;
+            background-color: #5b3a2e;
+        }
+        .categoria-secao:first-child .categoria-titulo { margin-top: 6px; }
+
+        .categoria-titulo.anima {
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .categoria-titulo.anima::after {
+            transition: opacity 0.4s ease 0.08s, width 0.4s ease 0.08s;
+            opacity: 0;
+            width: 0;
+        }
+        .categoria-titulo.anima.visivel {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .categoria-titulo.anima.visivel::after {
+            opacity: 1;
+            width: 34px;
+        }
+
+        .item-card {
+            background-color: var(--cartao);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid var(--linha);
+            box-shadow: 0 1px 3px rgba(42,26,18,0.05);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .item-card:active {
+            transform: scale(0.985);
+            box-shadow: 0 1px 2px rgba(42,26,18,0.06);
+        }
+
+        .item-info { flex: 1; min-width: 0; }
+        .item-titulo { font-size: 15px; font-weight: 700; color: var(--texto); margin-bottom: 3px; }
+        .item-descricao {
+            font-size: 12.5px;
+            color: var(--texto-fraco);
+            line-height: 1.35;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .item-preco { font-size: 14px; font-weight: 700; color: #5b3a2e; }
+        .item-imagem {
+            width: 88px;
+            height: 88px;
+            border-radius: 12px;
+            object-fit: cover;
+            background-color: #e7dcca;
+            flex-shrink: 0;
+        }
+
+        .rodape-info {
+            max-width: 560px;
+            margin: 34px auto 0;
+            padding: 18px 16px 4px;
+            text-align: center;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--texto-fraco);
+            border-top: 1px solid var(--linha);
+        }
+        .rodape-info a { color: var(--marrom-forte); text-decoration: none; font-weight: 600; }
+
+        /* ---------- Carrinho ---------- */
+        .btn-carrinho {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: rgba(255,255,255,0.1);
+            color: var(--creme);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .carrinho-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background-color: #c0392b;
+            color: #fff;
+            font-size: 10.5px;
+            font-weight: 800;
+            min-width: 17px;
+            height: 17px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+
+        .modal-carrinho {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: rgba(30, 18, 12, .55);
+        }
+        .modal-carrinho[hidden] { display: none; }
+        .modal-carrinho-caixa {
+            background-color: var(--cartao);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 88vh;
+            overflow: auto;
+            padding: 20px;
+            box-shadow: 0 24px 70px rgba(0,0,0,.4);
+            text-align: left;
+        }
+        .modal-carrinho-caixa.modal-pequena { text-align: center; }
+        .modal-carrinho-caixa.modal-pequena p { color: #6f5d4e; font-size: 14px; margin: 10px 0 18px; }
+        .modal-carrinho-cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .modal-carrinho-cab h3 { font-size: 17px; font-weight: 700; color: var(--marrom-forte); }
+        .modal-carrinho-caixa .btn-x {
+            border: none; background: none; font-size: 15px; color: #8a7869; cursor: pointer;
+            width: 28px; height: 28px; border-radius: 8px;
+        }
+        .modal-carrinho-caixa .btn-x:hover { background-color: #f2ebdf; }
+
+        .carrinho-lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .carrinho-item {
+            display: flex; justify-content: space-between; gap: 10px;
+            border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px;
+        }
+        .carrinho-item-nome { font-size: 13.5px; font-weight: 700; color: var(--texto); }
+        .carrinho-item-adic { font-size: 12px; color: var(--texto-fraco); margin-top: 2px; }
+        .carrinho-item-direita { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+        .carrinho-item-preco { font-size: 13px; font-weight: 700; color: var(--marrom-forte); white-space: nowrap; }
+        .carrinho-item-remover {
+            border: 1px solid #e3c9c4; background-color: #fdecea; color: #a5352c;
+            width: 24px; height: 24px; border-radius: 7px; font-size: 11px; cursor: pointer;
+        }
+        .carrinho-vazio { text-align: center; color: var(--texto-fraco); font-size: 13.5px; padding: 20px 0; }
+        .carrinho-total {
+            display: flex; justify-content: space-between; align-items: center;
+            border-top: 1px solid var(--linha); padding-top: 12px; margin-bottom: 14px;
+            font-size: 14px; color: var(--texto);
+        }
+        .carrinho-total strong { font-size: 17px; color: var(--marrom-forte); }
+
+        .btn-finalizar {
+            width: 100%; background-color: #25d366; color: #fff; border: none;
+            padding: 12px 16px; border-radius: 12px; font-size: 14.5px; font-weight: 700; cursor: pointer;
+        }
+        .btn-finalizar:disabled { opacity: .5; cursor: default; }
+        .btn-secundario {
+            width: 100%; background-color: #fff; color: var(--texto); border: 1px solid #d8ccba;
+            padding: 12px 16px; border-radius: 12px; font-size: 14.5px; font-weight: 600; cursor: pointer; margin-bottom: 8px;
+        }
+        .modal-acoes { display: flex; flex-direction: column; }
+
+        .aviso-envio {
+            background-color: #fdf0dd; border: 1px solid #eac89b; color: #7a5410;
+            border-radius: 10px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 12px;
+        }
+        .aviso-envio button { margin-top: 8px; }
+
+        .bloco { background-color: var(--cartao); border: 1px solid var(--linha); border-radius: 12px; padding: 2px 16px; }
+        .bloco-campos { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+        .campo { display: flex; flex-direction: column; gap: 6px; }
+        .campo-rot { font-size: 12px; font-weight: 600; color: var(--texto-fraco); }
+        .campo input[type="text"], .campo input[type="tel"], .campo select, .campo textarea {
+            width: 100%;
+            border: 1px solid #d8ccba;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            background-color: #fff;
+            color: var(--texto);
+            font-family: inherit;
+        }
+        .campo select:disabled { background-color: #f4ede2; color: var(--texto-fraco); cursor: not-allowed; }
+        .campo textarea { resize: vertical; min-height: 64px; }
+        .campo-mesa {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f4ede2;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .campo-mesa-valor { font-weight: 700; color: var(--marrom-forte); }
+        .campo-opcional { font-weight: 400; text-transform: none; color: var(--texto-fraco); letter-spacing: 0; }
+        .erro { color: #b5322b; font-size: 12px; margin-top: 8px; display: none; }
+        .erro.ativo { display: block; }
+
+        /* radios/checkboxes (opções de entrega) */
+        input[type="radio"], input[type="checkbox"] {
+            appearance: none; -webkit-appearance: none; width: 20px; height: 20px;
+            border: 2px solid #cdbfae; flex-shrink: 0; position: relative; cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+        input[type="radio"] { border-radius: 50%; margin-left: auto; }
+        input[type="checkbox"] { border-radius: 6px; }
+        input[type="radio"]:checked { border-color: #5b3a2e; }
+        input[type="radio"]:checked::after {
+            content: ''; position: absolute; inset: 3px; border-radius: 50%; background-color: #5b3a2e;
+        }
+
+        /* ---------- Opções de entrega ---------- */
+        .opcoes-entrega { display: flex; flex-direction: column; gap: 10px; }
+        .opcao-entrega { border: 1px solid #d8ccba; border-radius: 12px; background-color: #fff; }
+        .opcao-entrega.selecionada { border-color: #5b3a2e; box-shadow: 0 0 0 1px #5b3a2e inset; }
+        .opcao-entrega-linha {
+            display: flex; align-items: center; gap: 10px; width: 100%;
+            padding: 12px 14px; cursor: pointer; background: none; border: none;
+            font: inherit; color: inherit; text-align: left;
+        }
+        .opcao-entrega-ic { font-size: 17px; flex: none; }
+        .opcao-entrega-tit { flex: 1; font-size: 14px; font-weight: 600; color: var(--texto); min-width: 0; }
+        .opcao-entrega-gratis { font-size: 12px; font-weight: 700; color: #2e7d43; }
+        .opcao-entrega-div { border-top: 1px dashed #d8ccba; margin: 0 14px; }
+        .opcao-entrega-sub .opcao-entrega-tit { font-weight: 500; font-size: 13px; color: #6f5d4e; }
+        .opcao-entrega-sub:hover { background-color: #f8f4ec; }
+        .opcao-entrega-seta { font-size: 15px; color: #b3a390; flex: none; }
+        .opcao-entrega-endereco { padding: 0 14px 12px 42px; font-size: 12.5px; color: var(--texto-fraco); }
+
+        .campo-linha { display: flex; gap: 10px; }
+        .campo-rua { flex: 1; min-width: 0; }
+        .campo-numero { width: 90px; flex: none; }
+
+        /* Cidade/Bairro: parecem os outros campos, mas abrem NOSSO modal de
+           lista em vez do <select> nativo — que muda de aparência (e de
+           usabilidade) de aparelho pra aparelho. */
+        .campo-select-like {
+            width: 100%; border: 1px solid #d8ccba; border-radius: 10px; padding: 10px 12px;
+            font-size: 14px; background-color: #fff; color: var(--texto); font-family: inherit;
+            display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-align: left;
+        }
+        .campo-select-like:disabled { background-color: #f4ede2; color: var(--texto-fraco); cursor: not-allowed; }
+        .campo-select-seta { color: #b3a390; font-size: 12px; }
+
+        #modalListaEscolha { z-index: 301; }
+        .lista-escolha { display: flex; flex-direction: column; max-height: 55vh; overflow-y: auto; margin-top: 4px; }
+        .item-lista-escolha {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            width: 100%; text-align: left; border: none; border-bottom: 1px solid var(--linha);
+            background: none; padding: 13px 4px; font: inherit; font-size: 14px; color: var(--texto); cursor: pointer;
+        }
+        .item-lista-escolha:last-child { border-bottom: none; }
+        .item-lista-escolha.selecionado { font-weight: 700; color: var(--marrom-forte); }
+        .item-lista-escolha-check { color: var(--marrom-forte); font-size: 15px; visibility: hidden; flex: none; }
+        .item-lista-escolha.selecionado .item-lista-escolha-check { visibility: visible; }
+    </style>
+</head>
+<body>
+
+    <div class="fixed-top">
+        <header>
+            <div class="marca-logo">🥖</div>
+            <div class="marca-nome">Com Carinho</div>
+            <div class="marca-slogan">Cardápio &middot; Sabor em cada detalhe</div>
+            <button type="button" id="btnCarrinho" class="btn-carrinho" aria-label="Ver carrinho">
+                🛒<span id="carrinhoContagem" class="carrinho-badge" hidden>0</span>
+            </button>
+        </header>
+        <div class="categorias-bar" id="categoriasBar"></div>
+    </div>
+
+    <main class="container" id="cardapio"></main>
+
+    <footer class="rodape-info">
+        <div>Rua Dona Fiota, 233 &ndash; Santa Ruth, Itabira/MG</div>
+        <div>Contato: <a href="tel:+553138354125">(31) 3835-4125</a></div>
+        <!-- BOTÃO TEMPORÁRIO DO PAINEL — remover depois -->
+        <div style="margin-top:14px">
+            <a href="../admin/admin.html" style="display:inline-block;padding:8px 14px;border:1px solid #ddd;border-radius:8px;color:#999;font-weight:400">Painel administrativo</a>
+        </div>
+    </footer>
+
+    <div id="modalCarrinho" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa">
+            <div class="modal-carrinho-cab">
+                <h3>Seu carrinho</h3>
+                <button type="button" id="fecharCarrinho" class="btn-x" aria-label="Fechar">✕</button>
+            </div>
+            <div id="carrinhoLista" class="carrinho-lista"></div>
+            <div id="carrinhoVazio" class="carrinho-vazio" hidden>Seu carrinho está vazio.</div>
+            <div class="carrinho-total"><span>Total</span><strong id="carrinhoTotalValor">R$ 0,00</strong></div>
+            <button type="button" id="btnFinalizarCarrinho" class="btn-finalizar" disabled>Finalizar pedido</button>
+        </div>
+    </div>
+
+    <div id="modalItemAdicionado" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa modal-pequena">
+            <h3>Item adicionado! ✅</h3>
+            <p>Quer colocar mais alguma coisa no carrinho ou já pode finalizar o pedido?</p>
+            <div class="modal-acoes">
+                <button type="button" id="btnContinuarComprando" class="btn-secundario">Continuar comprando</button>
+                <button type="button" id="btnIrFinalizar" class="btn-finalizar">Finalizar pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalFinalizar" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa">
+            <div class="modal-carrinho-cab">
+                <h3 id="finalizarTitulo">Seus dados</h3>
+                <button type="button" id="fecharFinalizar" class="btn-x" aria-label="Fechar">✕</button>
+            </div>
+            <div class="bloco bloco-campos">
+                <div class="campo">
+                    <input type="text" id="finalNome" maxlength="60" placeholder="Nome" aria-label="Nome" autocomplete="name" required>
+                </div>
+                <div class="campo campo-mesa" id="finalMesaInfo" hidden>
+                    <span class="campo-rot">Mesa</span>
+                    <span class="campo-mesa-valor" id="finalMesaValor"></span>
+                </div>
+                <div class="campo" id="finalTelefoneWrap">
+                    <input type="tel" id="finalTelefone" maxlength="20" placeholder="Telefone" aria-label="Telefone (WhatsApp)" autocomplete="tel" required>
+                </div>
+                <div class="campo" id="finalEntregaWrap">
+                    <span class="campo-rot">Opções de entrega</span>
+                    <div class="opcoes-entrega">
+                        <div class="opcao-entrega" id="optReceber">
+                            <label class="opcao-entrega-linha">
+                                <span class="opcao-entrega-ic">🛵</span>
+                                <span class="opcao-entrega-tit">Receber no seu endereço</span>
+                                <input type="radio" name="modoEntrega" value="receber" id="radioReceber">
+                            </label>
+                            <div class="opcao-entrega-div"></div>
+                            <button type="button" id="btnInformarEndereco" class="opcao-entrega-linha opcao-entrega-sub">
+                                <span class="opcao-entrega-ic">📍</span>
+                                <span class="opcao-entrega-tit" id="resumoEndereco">Informe seu endereço</span>
+                                <span class="opcao-entrega-seta">›</span>
+                            </button>
+                        </div>
+                        <div class="opcao-entrega" id="optRetirar">
+                            <label class="opcao-entrega-linha">
+                                <span class="opcao-entrega-ic">🏬</span>
+                                <span class="opcao-entrega-tit">Retire na loja</span>
+                                <span class="opcao-entrega-gratis">Grátis</span>
+                                <input type="radio" name="modoEntrega" value="retirar" id="radioRetirar">
+                            </label>
+                            <div class="opcao-entrega-endereco" id="enderecoLojaTxt"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="erro" id="erroFinalizar">Preencha os campos obrigatórios para continuar.</div>
+            <div class="aviso-envio" id="avisoEnvioFalhou" hidden>
+                Seu pedido já foi enviado pelo WhatsApp, mas não conseguimos confirmá-lo no sistema da padaria.
+                <button type="button" id="btnTentarNovamenteEnvio" class="btn-secundario">Tentar registrar de novo</button>
+            </div>
+            <button type="button" id="btnConfirmarPedido" class="btn-finalizar">Confirmar e enviar pelo WhatsApp</button>
+        </div>
+    </div>
+
+    <div id="modalEndereco" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa">
+            <div class="modal-carrinho-cab">
+                <h3>Endereço de entrega</h3>
+                <button type="button" id="fecharEndereco" class="btn-x" aria-label="Fechar">✕</button>
+            </div>
+            <div class="bloco bloco-campos">
+                <div class="campo">
+                    <button type="button" id="btnCidade" class="campo-select-like" aria-label="Cidade">
+                        <span id="cidadeTxt">Cidade</span>
+                        <span class="campo-select-seta">⌄</span>
+                    </button>
+                </div>
+                <div class="campo">
+                    <button type="button" id="btnBairro" class="campo-select-like" disabled aria-label="Bairro">
+                        <span id="bairroTxt">Bairro</span>
+                        <span class="campo-select-seta">⌄</span>
+                    </button>
+                </div>
+                <div class="campo-linha">
+                    <div class="campo campo-rua">
+                        <input type="text" id="endRua" maxlength="150" placeholder="Rua" aria-label="Rua" autocomplete="address-line1">
+                    </div>
+                    <div class="campo campo-numero">
+                        <input type="text" id="endNumero" maxlength="10" placeholder="Nº" aria-label="Número" autocomplete="off">
+                    </div>
+                </div>
+                <div class="campo">
+                    <input type="text" id="endComplemento" maxlength="100" placeholder="Complemento (opcional)" aria-label="Complemento (opcional)" autocomplete="address-line2">
+                </div>
+            </div>
+            <div class="erro" id="erroEndereco">Preencha cidade, bairro, rua e número para continuar.</div>
+            <button type="button" id="btnSalvarEndereco" class="btn-finalizar">Confirmar endereço</button>
+        </div>
+    </div>
+
+    <div id="modalListaEscolha" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa">
+            <div class="modal-carrinho-cab">
+                <h3 id="listaEscolhaTitulo">Selecione</h3>
+                <button type="button" id="fecharListaEscolha" class="btn-x" aria-label="Fechar">✕</button>
+            </div>
+            <div id="listaEscolhaCorpo" class="lista-escolha"></div>
+        </div>
+    </div>
+
+    <div id="modalSucesso" class="modal-carrinho" hidden>
+        <div class="modal-carrinho-caixa modal-pequena">
+            <h3>Pedido enviado! 🎉</h3>
+            <p id="sucessoTexto">Seu pedido foi enviado pelo WhatsApp e já está no sistema da padaria.</p>
+            <button type="button" id="btnFecharSucesso" class="btn-finalizar">OK</button>
+        </div>
+    </div>
+
+    <script src="catalogo.php"></script>
+    <script src="nucleo.js"></script>
+    <script src="carrinho.js"></script>
+    <script src="cardapio.js"></script>
+</body>
+</html>

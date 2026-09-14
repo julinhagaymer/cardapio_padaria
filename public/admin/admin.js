@@ -4,6 +4,13 @@
     const $ = function (id) { return document.getElementById(id); };
     const clonar = function (o) { return JSON.parse(JSON.stringify(o)); };
 
+    // Escapa texto antes de colocá-lo em HTML (equivale ao htmlspecialchars do PHP).
+    const escaparHtml = function (s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    };
+
     let modelo = null;
     let salvo = true;
     let filtroProduto = "";
@@ -11,6 +18,9 @@
     let modoOrdemSecoes = false;
     let modoOrdemAdicionais = false;
     let modalConfirmar = null;
+    // navLateral() troca isto pela função real assim que monta a barra lateral;
+    // esconderLogin() chama para acertar o item ativo assim que o painel aparece.
+    let atualizarNavAtiva = function () {};
 
     // =========================================================================
     // Utilidades
@@ -47,9 +57,26 @@
         rs.textContent = "R$";
         const inp = document.createElement("input");
         inp.type = "text";
-        inp.inputMode = "decimal";
+        inp.inputMode = "numeric";
+        inp.autocomplete = "off";
         inp.value = formatarNum(valorInicial);
-        inp.addEventListener("input", function () { aoMudar(num(inp.value)); });
+
+        // Só aceita números; a vírgula se posiciona sozinha, tratando o que foi
+        // digitado como centavos: 5 -> 0,05 | 125 -> 1,25 | 1250 -> 12,50.
+        function mascarar() {
+            const dig = inp.value.replace(/\D/g, "").slice(0, 12);
+            const centavos = dig === "" ? 0 : parseInt(dig, 10);
+            inp.value = dig === "" ? "" : formatarNum(centavos / 100);
+            aoMudar(centavos / 100);
+        }
+
+        // Ao focar num campo ainda zerado, limpa o "0,00" para o dono já digitar
+        // sem precisar apagar; num campo com valor, seleciona tudo para substituir.
+        inp.addEventListener("focus", function () {
+            if (num(inp.value) === 0) inp.value = "";
+            else inp.select();
+        });
+        inp.addEventListener("input", mascarar);
         inp.addEventListener("blur", function () { inp.value = formatarNum(num(inp.value)); });
         wrap.appendChild(rs);
         wrap.appendChild(inp);
@@ -153,7 +180,7 @@
                     atualizarStats();
                     const cx = $("erroCarregar");
                     cx.innerHTML = "<strong>Os dados carregaram, mas houve um erro ao montar a tela.</strong>" +
-                        "<br><span style=\"opacity:.7\">" + String(err && err.message) + "</span>";
+                        "<br><span style=\"opacity:.7\">" + escaparHtml(err && err.message) + "</span>";
                     cx.hidden = false;
                     if (window.console) console.error(err);
                 }
@@ -176,7 +203,7 @@
 
                 const cx = $("erroCarregar");
                 cx.innerHTML = "<strong>Não consegui carregar o cardápio do servidor.</strong><br>" +
-                    dica + "<br><span style=\"opacity:.7\">Detalhe técnico: " + String(e.message) + "</span>";
+                    dica + "<br><span style=\"opacity:.7\">Detalhe técnico: " + escaparHtml(e.message) + "</span>";
                 cx.hidden = false;
                 cx.scrollIntoView({ behavior: "smooth", block: "center" });
             });
@@ -290,11 +317,36 @@
     function esconderLogin() {
         document.body.classList.remove("bloqueado");
         $("erroLogin").hidden = true;
+        atualizarNavAtiva();
     }
+    let contagemRegressiva = null;
+    function bloquearBotao(segundos) {
+        const btn = $("btnEntrar");
+        const rotulo = "Entrar";
+        clearInterval(contagemRegressiva);
+        let resta = Math.max(0, Math.floor(segundos));
+        btn.disabled = true;
+        const tick = function () {
+            if (resta <= 0) {
+                clearInterval(contagemRegressiva);
+                contagemRegressiva = null;
+                btn.disabled = false;
+                btn.textContent = rotulo;
+                return;
+            }
+            const m = Math.floor(resta / 60), s = resta % 60;
+            btn.textContent = "Aguarde " + (m > 0 ? m + "m " : "") + s + "s";
+            resta--;
+        };
+        tick();
+        contagemRegressiva = setInterval(tick, 1000);
+    }
+
     function entrar() {
         const inp = $("senhaLogin");
         const erro = $("erroLogin");
-        const val = inp.value;
+        if ($("btnEntrar").disabled) return; // em contagem regressiva de bloqueio
+        const val = inp.value.trim(); // tira espaço/quebra-de-linha que vem ao colar
         if (!val) { inp.focus(); return; }
         $("btnEntrar").disabled = true;
         fetch("api.php?acao=entrar", {
@@ -305,11 +357,21 @@
         })
             .then(function (r) { return r.json().catch(function () { return {}; }); })
             .then(function (j) {
-                if (j.ok) { erro.hidden = true; carregar(); }
-                else { erro.textContent = j.erro || "Senha incorreta."; erro.hidden = false; inp.select(); }
+                if (j.ok) { erro.hidden = true; carregar(); return; }
+                erro.textContent = j.erro || "Senha incorreta.";
+                erro.hidden = false;
+                inp.select();
+                if (j.espera) {
+                    bloquearBotao(j.espera);
+                } else {
+                    $("btnEntrar").disabled = false;
+                }
             })
-            .catch(function () { erro.textContent = "Falha de conexão com o servidor."; erro.hidden = false; })
-            .finally(function () { $("btnEntrar").disabled = false; });
+            .catch(function () {
+                erro.textContent = "Falha de conexão com o servidor.";
+                erro.hidden = false;
+                $("btnEntrar").disabled = false;
+            });
     }
     function sair() {
         fetch("api.php?acao=sair", { method: "POST", credentials: "same-origin" })
@@ -507,9 +569,21 @@
             const grupo = document.createElement("div");
             grupo.className = "grupo-cat";
 
+            const cab = document.createElement("div");
+            cab.className = "grupo-cat-cab";
             const h = document.createElement("h3");
             h.textContent = cat.nome;
-            grupo.appendChild(h);
+            cab.appendChild(h);
+            if (doGrupo.length) {
+                const bDup = document.createElement("button");
+                bDup.type = "button";
+                bDup.className = "btn btn-mini";
+                bDup.textContent = "Duplicar produto";
+                bDup.title = "Escolher um produto desta seção para copiar";
+                bDup.addEventListener("click", function () { modalEscolherDuplicar(cat, doGrupo); });
+                cab.appendChild(bDup);
+            }
+            grupo.appendChild(cab);
 
             if (doGrupo.length) {
                 const grade = document.createElement("div");
@@ -946,17 +1020,62 @@
         if (e.key === "Escape" && !$("modal").hidden) fecharModal();
     });
 
-    function modalNovoProduto() {
-        if (!modelo || !modelo.categorias.length) return;
-        const novo = {
-            nome: "", descricao: "", imagem: "", preco: 0, tipo: "simples",
-            categoria: modelo.categorias[0].id,
-            adicionais: modelo.adicionais.map(function (a) { return a.id; })
+    // Grava um produto novo a partir do rascunho `novo`. Devolve true se deu certo.
+    function salvarNovo(novo) {
+        novo.nome = (novo.nome || "").trim();
+        if (!novo.nome) { alert("Dê um nome ao produto."); return false; }
+        const prod = {
+            id: idUnico(novo.nome, modelo.produtos.map(function (p) { return p.id; })),
+            categoria: novo.categoria,
+            tipo: novo.tipo,
+            nome: novo.nome,
+            descricao: (novo.descricao || "").trim(),
+            imagem: imagemOk(novo.imagem),
+            adicionais: (novo.adicionais || []).slice()
         };
+        if (novo.tipo !== "pizza") prod.preco = num(novo.preco);
+        modelo.produtos.push(prod);
+        marcarNaoSalvo();
+        filtroProduto = "";
+        $("buscaProduto").value = "";
+        renderProdutos();
+        atualizarStats();
+        return true;
+    }
 
-        abrirModal("Adicionar produto", function (corpo) {
-            const cNome = campoModal("Nome do produto", inputTexto("Ex.: Pão de mel", function (v) { novo.nome = v; }));
-            corpo.appendChild(cNome);
+    // preset opcional: pré-preenche campos (usado por "duplicar" e por
+    // "adicionar e continuar", que reabre o modal mantendo seção/tipo).
+    function modalNovoProduto(preset) {
+        if (!modelo || !modelo.categorias.length) return;
+        preset = preset || {};
+        const temCat = modelo.categorias.some(function (c) { return c.id === preset.categoria; });
+        const novo = {
+            nome: preset.nome || "",
+            descricao: preset.descricao || "",
+            imagem: preset.imagem || "",
+            preco: typeof preset.preco === "number" ? preset.preco : 0,
+            tipo: preset.tipo === "pizza" ? "pizza" : "simples",
+            categoria: temCat ? preset.categoria : modelo.categorias[0].id,
+            adicionais: Array.isArray(preset.adicionais) ? preset.adicionais.slice() : []
+        };
+        const jaAdicionados = preset.contador || 0;
+
+        abrirModal(preset.titulo || "Adicionar produto", function (corpo) {
+            if (jaAdicionados > 0) {
+                const info = document.createElement("div");
+                info.className = "sub";
+                info.style.margin = "0 0 4px";
+                info.textContent = jaAdicionados + (jaAdicionados === 1 ? " produto adicionado" : " produtos adicionados") +
+                    " agora — seção e tipo continuam iguais. Preencha o próximo.";
+                corpo.appendChild(info);
+            }
+
+            const inpNome = document.createElement("input");
+            inpNome.type = "text";
+            inpNome.placeholder = "Ex.: Coca-Cola 350ml";
+            inpNome.value = novo.nome;
+            inpNome.addEventListener("input", function () { novo.nome = inpNome.value; });
+            corpo.appendChild(campoModal("Nome do produto", inpNome));
 
             corpo.appendChild(campoModal("Seção", selecaoCategorias(novo.categoria, function (v) { novo.categoria = v; })));
 
@@ -964,11 +1083,13 @@
             [["simples", "Simples (preço fixo)"], ["pizza", "Pizza (tamanho/borda)"]].forEach(function (o) {
                 const op = document.createElement("option");
                 op.value = o[0]; op.textContent = o[1];
+                if (novo.tipo === o[0]) op.selected = true;
                 selTipo.appendChild(op);
             });
             corpo.appendChild(campoModal("Tipo", selTipo));
 
-            const campoDoPreco = campoModal("Preço", campoPreco(0, function (v) { novo.preco = v; }));
+            const campoDoPreco = campoModal("Preço", campoPreco(novo.preco, function (v) { novo.preco = v; }));
+            campoDoPreco.style.display = novo.tipo === "pizza" ? "none" : "";
             corpo.appendChild(campoDoPreco);
             selTipo.addEventListener("change", function () {
                 novo.tipo = selTipo.value;
@@ -977,7 +1098,8 @@
 
             const ta = document.createElement("textarea");
             ta.rows = 2;
-            ta.placeholder = "Ingredientes / detalhes";
+            ta.placeholder = "Ingredientes / detalhes (opcional)";
+            ta.value = novo.descricao;
             ta.addEventListener("input", function () { novo.descricao = ta.value; });
             corpo.appendChild(campoModal("Descrição", ta));
 
@@ -992,21 +1114,219 @@
 
             corpo.appendChild(campoModal("Adicionais que aparecem neste produto", blocoAdicionaisProduto(novo)));
 
-            return cNome.querySelector("input");
+            return inpNome;
         }, [
-            { texto: "Cancelar", acao: fecharModal },
-            { texto: "Adicionar", primario: true, acao: function () {
-                novo.nome = (novo.nome || "").trim();
-                if (!novo.nome) { alert("Dê um nome ao produto."); return; }
-                const prod = {
-                    id: idUnico(novo.nome, modelo.produtos.map(function (p) { return p.id; })),
-                    categoria: novo.categoria, tipo: novo.tipo, nome: novo.nome,
-                    descricao: (novo.descricao || "").trim(),
-                    imagem: imagemOk(novo.imagem),
-                    adicionais: novo.adicionais.slice()
-                };
-                if (novo.tipo !== "pizza") prod.preco = num(novo.preco);
-                modelo.produtos.push(prod);
+            { texto: "Adicionar e continuar", acao: function () {
+                if (!salvarNovo(novo)) return;
+                modalNovoProduto({
+                    categoria: novo.categoria,
+                    tipo: novo.tipo,
+                    adicionais: novo.adicionais,
+                    contador: jaAdicionados + 1
+                });
+            } },
+            { texto: "Adicionar e fechar", primario: true, acao: function () {
+                if (salvarNovo(novo)) fecharModal();
+            } }
+        ]);
+    }
+
+    // Um único botão "Duplicar produto" por seção (em vez de um em cada
+    // produto, fácil de clicar sem querer): o vendedor escolhe aqui qual
+    // produto vai servir de modelo, e só depois abre o formulário de cópia.
+    function modalEscolherDuplicar(cat, doGrupo) {
+        abrirModal("Duplicar produto — " + cat.nome, function (corpo) {
+            const info = document.createElement("div");
+            info.className = "sub";
+            info.textContent = "Escolha o produto que vai servir de modelo para a cópia.";
+            corpo.appendChild(info);
+
+            const lista = document.createElement("div");
+            lista.className = "lista-escolher";
+            doGrupo.forEach(function (prod) {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "item-escolher";
+                const nome = document.createElement("span");
+                nome.className = "item-escolher-nome";
+                nome.textContent = prod.nome;
+                const preco = document.createElement("span");
+                preco.className = "item-escolher-preco";
+                preco.textContent = resumoPreco(prod);
+                item.appendChild(nome);
+                item.appendChild(preco);
+                item.addEventListener("click", function () { modalDuplicarProduto(prod); });
+                lista.appendChild(item);
+            });
+            corpo.appendChild(lista);
+        }, [
+            { texto: "Cancelar", acao: fecharModal }
+        ]);
+    }
+
+    function modalDuplicarProduto(orig) {
+        modalNovoProduto({
+            titulo: "Duplicar produto",
+            nome: orig.nome + " (cópia)",
+            descricao: orig.descricao || "",
+            imagem: orig.imagem || "",
+            preco: typeof orig.preco === "number" ? orig.preco : 0,
+            tipo: orig.tipo,
+            categoria: orig.categoria,
+            adicionais: Array.isArray(orig.adicionais) ? orig.adicionais : []
+        });
+    }
+
+    // Lê "Nome; 6,00" | "Nome - 6,00" | "Nome | 6" | "Nome 6,00" | "Nome" -> {nome, preco}
+    function parseLinhaLote(linha) {
+        const s = (linha || "").trim();
+        if (!s) return null;
+        let nome, precoTxt = "";
+        let m = s.match(/^(.*\S)\s*(?:;|\||\t|\s[-–—]\s)\s*(.+)$/);
+        if (m) {
+            nome = m[1]; precoTxt = m[2];
+        } else {
+            m = s.match(/^(.*?\S)\s+R?\$?\s*(\d{1,7}(?:[.,]\d{1,2})?)\s*$/i);
+            if (m) { nome = m[1]; precoTxt = m[2]; }
+            else { nome = s; }
+        }
+        nome = nome.replace(/\s+/g, " ").trim();
+        if (!nome) return null;
+        return { nome: nome, preco: num(precoTxt.replace(/[r$\s]/gi, "")) };
+    }
+
+    function modalAdicionarLote() {
+        if (!modelo || !modelo.categorias.length) return;
+        const est = { categoria: modelo.categorias[0].id };
+        const linhas = [{ nome: "", preco: 0 }, { nome: "", preco: 0 }, { nome: "", preco: 0 }];
+        let boxLinhas = null;
+
+        function contarValidas() {
+            return linhas.filter(function (l) { return (l.nome || "").trim() !== ""; }).length;
+        }
+        function atualizarBotao() {
+            const b = $("modalRodape").querySelector('[data-primario="1"]');
+            if (!b) return;
+            const n = contarValidas();
+            b.textContent = n > 0 ? ("Adicionar " + n + (n === 1 ? " produto" : " produtos")) : "Adicionar produtos";
+            b.disabled = n === 0;
+        }
+        function focarLinha(i) {
+            const row = boxLinhas.children[i];
+            const inp = row && row.querySelector("input[type='text']");
+            if (inp) inp.focus();
+        }
+        function renderLinhas() {
+            boxLinhas.textContent = "";
+            linhas.forEach(function (l, i) {
+                const row = document.createElement("div");
+                row.className = "lote-linha";
+
+                const inNome = document.createElement("input");
+                inNome.type = "text";
+                inNome.placeholder = "Nome do produto";
+                inNome.value = l.nome;
+                inNome.addEventListener("input", function () { l.nome = inNome.value; atualizarBotao(); });
+                inNome.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); row.querySelector(".campo-preco input").focus(); }
+                });
+
+                const cp = campoPreco(l.preco, function (v) { l.preco = v; });
+                cp.querySelector("input").addEventListener("keydown", function (e) {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault(); e.stopPropagation();
+                    if (i === linhas.length - 1) { linhas.push({ nome: "", preco: 0 }); renderLinhas(); }
+                    focarLinha(i + 1);
+                });
+
+                const bx = document.createElement("button");
+                bx.type = "button";
+                bx.className = "btn-icone";
+                bx.textContent = "✕";
+                bx.title = "Remover linha";
+                bx.addEventListener("click", function () {
+                    linhas.splice(i, 1);
+                    if (!linhas.length) linhas.push({ nome: "", preco: 0 });
+                    renderLinhas();
+                    atualizarBotao();
+                });
+
+                row.appendChild(inNome);
+                row.appendChild(cp);
+                row.appendChild(bx);
+                boxLinhas.appendChild(row);
+            });
+        }
+
+        abrirModal("Adicionar vários produtos", function (corpo) {
+            const aviso = document.createElement("div");
+            aviso.className = "sub";
+            aviso.style.margin = "0 0 8px";
+            aviso.textContent = "Rápido para lançar uma seção inteira. Entram como “Simples”; foto e descrição você ajusta depois no Editar.";
+            corpo.appendChild(aviso);
+
+            corpo.appendChild(campoModal("Seção de todos", selecaoCategorias(est.categoria, function (v) { est.categoria = v; })));
+
+            const ta = document.createElement("textarea");
+            ta.rows = 3;
+            ta.placeholder = "Colar lista — um por linha. Ex.:\nCoca-Cola 350ml; 6,00\nGuaraná 2L - 12\nÁgua sem gás";
+            const wrapColar = campoModal("Colar lista (opcional)", ta);
+            const bColar = document.createElement("button");
+            bColar.type = "button";
+            bColar.className = "btn btn-mini";
+            bColar.textContent = "Preencher da lista";
+            bColar.style.marginTop = "6px";
+            bColar.addEventListener("click", function () {
+                const novas = ta.value.split(/\r?\n/).map(parseLinhaLote).filter(Boolean);
+                if (!novas.length) return;
+                for (let k = linhas.length - 1; k >= 0; k--) {
+                    if ((linhas[k].nome || "").trim() === "" && !linhas[k].preco) linhas.splice(k, 1);
+                }
+                novas.forEach(function (n) { linhas.push(n); });
+                ta.value = "";
+                renderLinhas();
+                atualizarBotao();
+            });
+            wrapColar.appendChild(bColar);
+            corpo.appendChild(wrapColar);
+
+            const cap = document.createElement("div");
+            cap.className = "campo-rot-txt";
+            cap.textContent = "Produtos";
+            corpo.appendChild(cap);
+
+            boxLinhas = document.createElement("div");
+            corpo.appendChild(boxLinhas);
+
+            const bMais = document.createElement("button");
+            bMais.type = "button";
+            bMais.className = "btn btn-mini";
+            bMais.textContent = "+ Linha";
+            bMais.style.marginTop = "6px";
+            bMais.addEventListener("click", function () {
+                linhas.push({ nome: "", preco: 0 });
+                renderLinhas();
+                focarLinha(linhas.length - 1);
+                atualizarBotao();
+            });
+            corpo.appendChild(bMais);
+
+            renderLinhas();
+            return boxLinhas.querySelector("input[type='text']");
+        }, [
+            { texto: "Adicionar produtos", primario: true, acao: function () {
+                const validas = linhas.filter(function (l) { return (l.nome || "").trim() !== ""; });
+                if (!validas.length) { alert("Preencha ao menos um nome."); return; }
+                const usados = modelo.produtos.map(function (p) { return p.id; });
+                validas.forEach(function (l) {
+                    const nome = l.nome.trim();
+                    const id = idUnico(nome, usados);
+                    usados.push(id);
+                    modelo.produtos.push({
+                        id: id, categoria: est.categoria, tipo: "simples", nome: nome,
+                        descricao: "", imagem: "", adicionais: [], preco: num(l.preco)
+                    });
+                });
                 marcarNaoSalvo();
                 filtroProduto = "";
                 $("buscaProduto").value = "";
@@ -1014,7 +1334,9 @@
                 atualizarStats();
                 fecharModal();
             } }
-        ]);
+        ], "lote");
+
+        atualizarBotao();
     }
 
     function modalNovaSecao() {
@@ -1079,7 +1401,8 @@
     $("btnAddTamanho").addEventListener("click", function () { modalNovaOpcao("Adicionar tamanho de pizza", "tamanhos", "listaTamanhos"); });
     $("btnAddBorda").addEventListener("click", function () { modalNovaOpcao("Adicionar borda de pizza", "bordas", "listaBordas"); });
 
-    $("btnAddProduto").addEventListener("click", modalNovoProduto);
+    $("btnAddProduto").addEventListener("click", function () { modalNovoProduto(); });
+    $("btnAddVarios").addEventListener("click", modalAdicionarLote);
 
     $("buscaProduto").addEventListener("input", function () {
         filtroProduto = this.value;
@@ -1136,6 +1459,10 @@
         });
 
         function aoRolar() {
+            // Com a tela de login em cima, o layout fica "display:none" e todo
+            // elemento mede 0 de altura — sem isto, o cálculo abaixo acaba
+            // marcando o último item da lista (Adicionais) como ativo.
+            if (document.body.classList.contains("bloqueado")) return;
             if (Date.now() < travaAte) return;
             const linha = 140;
             let atual = links[0].getAttribute("data-alvo");
@@ -1157,12 +1484,20 @@
             requestAnimationFrame(function () { aoRolar(); agendado = false; });
         }, { passive: true });
         window.addEventListener("resize", aoRolar);
+        atualizarNavAtiva = aoRolar;
         aoRolar();
     })();
 
     $("btnEntrar").addEventListener("click", entrar);
     $("senhaLogin").addEventListener("keydown", function (e) {
         if (e.key === "Enter") entrar();
+    });
+    $("verSenha").addEventListener("click", function () {
+        const i = $("senhaLogin");
+        const oculta = i.type === "password";
+        i.type = oculta ? "text" : "password";
+        this.textContent = oculta ? "ocultar" : "ver";
+        i.focus();
     });
     $("btnSair").addEventListener("click", sair);
 
@@ -1173,9 +1508,8 @@
         }
     });
 
-    // Toda visita ao painel pede a senha de novo: encerra qualquer sessão que
-    // tenha sobrado e mostra o login. Só entra de fato depois de digitar a senha.
-    fetch("api.php?acao=sair", { method: "POST", credentials: "same-origin" })
-        .catch(function () {})
-        .finally(function () { mostrarLogin(); });
+    // Toda visita ao painel pede a senha de novo — recarregar a página ou
+    // vir de outra seção (Pedidos) sempre passa pela tela de login. Só entra
+    // de fato depois de digitar a senha (entrar() chama carregar()).
+    mostrarLogin();
 })();
